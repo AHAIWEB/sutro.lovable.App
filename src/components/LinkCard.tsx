@@ -1,20 +1,13 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
-
-export interface LinkItem {
-  id: string;
-  title: string;
-  url: string;
-  category: string;
-  favicon?: string;
-  visits?: number;
-}
+import { ArrowUpRight, Eye } from "lucide-react";
+import type { LinkRow } from "@/hooks/useLinks";
 
 interface LinkCardProps {
-  link: LinkItem;
+  link: LinkRow;
+  index: number;
 }
 
-const LinkCard = ({ link }: LinkCardProps) => {
+const LinkCard = ({ link, index }: LinkCardProps) => {
   const domain = (() => {
     try {
       return new URL(link.url).hostname.replace("www.", "");
@@ -23,42 +16,42 @@ const LinkCard = ({ link }: LinkCardProps) => {
     }
   })();
 
+  const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
   return (
     <motion.a
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative p-4 bg-card border border-border hover:border-primary/50 transition-colors duration-200 rounded-lg block"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.03, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="group relative p-4 glass-card hover:border-primary/40 hover:shadow-md transition-all duration-300 rounded-xl block"
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-10 h-10 rounded-[4px] bg-muted flex items-center justify-center p-2">
-          {link.favicon ? (
-            <img
-              src={link.favicon}
-              alt=""
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          ) : (
-            <span className="text-lg font-display text-muted-foreground">
-              {link.title.charAt(0)}
-            </span>
-          )}
+      <div className="flex justify-between items-start mb-3">
+        <div className="w-11 h-11 rounded-xl bg-muted/60 flex items-center justify-center p-2 group-hover:bg-primary/10 transition-colors">
+          <img
+            src={faviconUrl}
+            alt=""
+            className="w-6 h-6 object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+              (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-base font-display text-muted-foreground">${link.title.charAt(0)}</span>`;
+            }}
+          />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+        <ArrowUpRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
       </div>
-      <h3 className="font-semibold text-foreground text-base mb-1 line-clamp-2">
+      <h3 className="font-semibold text-foreground text-[15px] mb-1 line-clamp-2 group-hover:text-primary transition-colors duration-200">
         {link.title}
       </h3>
-      <p className="font-meta text-muted-foreground truncate">{domain}</p>
-      {link.visits !== undefined && (
-        <p className="font-meta text-muted-foreground/60 mt-2">
-          {link.visits.toLocaleString("bn-BD")} বার পরিদর্শন
-        </p>
+      <p className="text-xs text-muted-foreground truncate mb-2">{domain}</p>
+      {link.visits > 0 && (
+        <div className="flex items-center gap-1 text-muted-foreground/50">
+          <Eye className="w-3 h-3" />
+          <span className="font-meta">{link.visits.toLocaleString("bn-BD")}</span>
+        </div>
       )}
     </motion.a>
   );

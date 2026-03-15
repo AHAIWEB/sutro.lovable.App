@@ -16,9 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Category } from "./CategorySidebar";
+import { useSubmitLink, type CategoryRow } from "@/hooks/useLinks";
 
 const linkSchema = z.object({
   url: z.string().trim().url({ message: "সঠিক URL দিন" }).max(500),
@@ -27,19 +27,19 @@ const linkSchema = z.object({
 });
 
 interface AddLinkDialogProps {
-  categories: Category[];
-  onAdd: (link: { url: string; title: string; category: string }) => void;
+  categories: CategoryRow[];
 }
 
-const AddLinkDialog = ({ categories, onAdd }: AddLinkDialogProps) => {
+const AddLinkDialog = ({ categories }: AddLinkDialogProps) => {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const submitLink = useSubmitLink();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const result = linkSchema.safeParse({ url, title, category });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -50,29 +50,45 @@ const AddLinkDialog = ({ categories, onAdd }: AddLinkDialogProps) => {
       return;
     }
 
-    onAdd({ url: result.data.url, title: result.data.title, category: result.data.category });
-    toast({
-      title: "সংযুক্ত হয়েছে!",
-      description: "আপনার লিংক পেন্ডিং তালিকায় যোগ হয়েছে।",
-    });
-    setUrl("");
-    setTitle("");
-    setCategory("");
-    setErrors({});
-    setOpen(false);
+    try {
+      await submitLink.mutateAsync({
+        url: result.data.url,
+        title: result.data.title,
+        category_id: result.data.category,
+      });
+      toast({
+        title: "সংযুক্ত হয়েছে! ✅",
+        description: "আপনার লিংক পর্যালোচনার জন্য জমা হয়েছে।",
+      });
+      setUrl("");
+      setTitle("");
+      setCategory("");
+      setErrors({});
+      setOpen(false);
+    } catch {
+      toast({
+        title: "ত্রুটি",
+        description: "লিংক জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 text-xs">
+        <Button size="sm" className="gap-1.5 text-xs rounded-full px-4">
           <Plus className="w-3.5 h-3.5" />
-          সংযুক্ত করুন
+          <span className="hidden sm:inline">সাইট জমা দিন</span>
+          <span className="sm:hidden">জমা</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">নতুন লিংক সংযুক্ত করুন</DialogTitle>
+          <DialogTitle className="font-display text-xl">নতুন সাইট জমা দিন</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            পর্যালোচনার পর আপনার সাইট যুক্ত হবে
+          </p>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
@@ -98,7 +114,7 @@ const AddLinkDialog = ({ categories, onAdd }: AddLinkDialogProps) => {
                 <SelectValue placeholder="ক্যাটাগরি নির্বাচন করুন" />
               </SelectTrigger>
               <SelectContent>
-                {categories.filter(c => c.id !== "all").map((cat) => (
+                {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.icon} {cat.name}
                   </SelectItem>
@@ -107,8 +123,13 @@ const AddLinkDialog = ({ categories, onAdd }: AddLinkDialogProps) => {
             </Select>
             {errors.category && <p className="text-xs text-destructive mt-1">{errors.category}</p>}
           </div>
-          <Button onClick={handleSubmit} className="w-full">
-            সংযুক্ত করুন
+          <Button
+            onClick={handleSubmit}
+            className="w-full gap-2"
+            disabled={submitLink.isPending}
+          >
+            <Send className="w-4 h-4" />
+            {submitLink.isPending ? "জমা হচ্ছে..." : "জমা দিন"}
           </Button>
         </div>
       </DialogContent>
