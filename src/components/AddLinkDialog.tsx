@@ -50,7 +50,7 @@ const AddLinkDialog = ({ categories, onAdd }: AddLinkDialogProps) => {
       return;
     }
 
-    onAdd(result.data);
+    onAdd({ url: result.data.url, title: result.data.title, category: result.data.category });
     toast({
       title: "সংযুক্ত হয়েছে!",
       description: "আপনার লিংক পেন্ডিং তালিকায় যোগ হয়েছে।",
