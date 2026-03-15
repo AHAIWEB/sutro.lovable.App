@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import NewsTicker from "@/components/NewsTicker";
 import SutraHeader from "@/components/SutraHeader";
-import CategorySidebar from "@/components/CategorySidebar";
+import CategoryGrid from "@/components/CategoryGrid";
 import MobileCategoryBar from "@/components/MobileCategoryBar";
 import LinkCard from "@/components/LinkCard";
 import { useCategories, useLinks } from "@/hooks/useLinks";
@@ -39,8 +38,25 @@ const Index = () => {
   }, [links, activeCategory, searchQuery]);
 
   const activeCatName = activeCategory === "all"
-    ? "সব"
-    : categories.find((c) => c.id === activeCategory)?.name ?? "সব";
+    ? "সব সাইট"
+    : categories.find((c) => c.id === activeCategory)?.name ?? "সব সাইট";
+
+  const activeCatIcon = activeCategory === "all"
+    ? "📋"
+    : categories.find((c) => c.id === activeCategory)?.icon ?? "📋";
+
+  // Group links by category when showing "all"
+  const groupedLinks = useMemo(() => {
+    if (activeCategory !== "all" || searchQuery.trim()) return null;
+    const groups: Record<string, typeof links> = {};
+    filteredLinks.forEach((link) => {
+      if (!groups[link.category_id]) groups[link.category_id] = [];
+      groups[link.category_id].push(link);
+    });
+    return groups;
+  }, [filteredLinks, activeCategory, searchQuery]);
+
+  const isLoading = linksLoading || catsLoading;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -51,54 +67,101 @@ const Index = () => {
         onSearchChange={setSearchQuery}
         totalLinks={links.length}
       />
-      <MobileCategoryBar
-        categories={categories}
-        activeCategory={activeCategory}
-        onSelect={setActiveCategory}
-      />
 
-      <div className="flex flex-1">
-        <CategorySidebar
+      {/* Category Grid — always visible */}
+      {!isLoading && (
+        <CategoryGrid
           categories={categories}
           activeCategory={activeCategory}
           onSelect={setActiveCategory}
           linkCounts={linkCounts}
           totalLinks={links.length}
         />
+      )}
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-display text-lg text-foreground">{activeCatName}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {filteredLinks.length.toLocaleString("bn-BD")} টি ফলাফল
-              </p>
-            </div>
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Links Section */}
+      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
           </div>
-
-          {linksLoading || catsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <Skeleton key={i} className="h-36 rounded-xl" />
+        ) : groupedLinks && !searchQuery.trim() ? (
+          /* Grouped by category view */
+          <div className="space-y-8">
+            {categories
+              .filter((cat) => groupedLinks[cat.id]?.length)
+              .map((cat) => (
+                <section key={cat.id}>
+                  <div className="flex items-center justify-between mb-3">
+                    <button
+                      onClick={() => setActiveCategory(cat.id)}
+                      className="flex items-center gap-2 group"
+                    >
+                      <span className="text-lg">{cat.icon}</span>
+                      <h3 className="font-display text-base text-foreground group-hover:text-primary transition-colors">
+                        {cat.name}
+                      </h3>
+                      <span className="font-meta text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {groupedLinks[cat.id].length}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setActiveCategory(cat.id)}
+                      className="font-meta text-primary hover:underline"
+                    >
+                      সব দেখুন →
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {groupedLinks[cat.id].slice(0, 4).map((link, i) => (
+                      <LinkCard key={link.id} link={link} index={i} />
+                    ))}
+                  </div>
+                </section>
               ))}
+          </div>
+        ) : (
+          /* Filtered single-category or search view */
+          <>
+            <div className="flex items-center gap-2 mb-5">
+              <span className="text-lg">{activeCatIcon}</span>
+              <h2 className="font-display text-lg text-foreground">{activeCatName}</h2>
+              <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {filteredLinks.length.toLocaleString("bn-BD")} টি
+              </span>
+              {activeCategory !== "all" && (
+                <button
+                  onClick={() => setActiveCategory("all")}
+                  className="ml-auto font-meta text-primary hover:underline"
+                >
+                  ← সব দেখুন
+                </button>
+              )}
             </div>
-          ) : filteredLinks.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-20"
-            >
-              <p className="text-muted-foreground text-sm">কোনো লিংক পাওয়া যায়নি।</p>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {filteredLinks.map((link, i) => (
-                <LinkCard key={link.id} link={link} index={i} />
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
+            {filteredLinks.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-20"
+              >
+                <p className="text-4xl mb-3">🔍</p>
+                <p className="text-muted-foreground text-sm">কোনো লিংক পাওয়া যায়নি।</p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {filteredLinks.map((link, i) => (
+                  <LinkCard key={link.id} link={link} index={i} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </main>
 
       <footer className="border-t border-border py-4 text-center">
         <p className="text-xs text-muted-foreground">
