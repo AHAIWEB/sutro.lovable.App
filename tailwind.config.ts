@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ["'Hind Siliguri'", "system-ui", "sans-serif"],
+        body: ["'Noto Sans Bengali'", "'Hind Siliguri'", "system-ui", "sans-serif"],
         display: ["'Hind Siliguri'", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "'SF Mono'", "'Cascadia Code'", "monospace"],
       },
