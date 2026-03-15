@@ -14,7 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          name_en: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id: string
+          name: string
+          name_en: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          name_en?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      links: {
+        Row: {
+          category_id: string
+          created_at: string
+          favicon: string | null
+          id: string
+          status: string
+          submitted_by: string | null
+          title: string
+          updated_at: string
+          url: string
+          visits: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          favicon?: string | null
+          id?: string
+          status?: string
+          submitted_by?: string | null
+          title: string
+          updated_at?: string
+          url: string
+          visits?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          favicon?: string | null
+          id?: string
+          status?: string
+          submitted_by?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
