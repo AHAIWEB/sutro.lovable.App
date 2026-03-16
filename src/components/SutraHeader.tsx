@@ -1,7 +1,11 @@
-import { Search, Globe } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search, Globe, Shield, LogIn, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import AddLinkDialog from "./AddLinkDialog";
 import type { CategoryRow } from "@/hooks/useLinks";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SutraHeaderProps {
   categories: CategoryRow[];
@@ -11,6 +15,20 @@ interface SutraHeaderProps {
 }
 
 const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: SutraHeaderProps) => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
   return (
     <header className="border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-30">
       <div className="container flex items-center justify-between py-3 gap-4">
@@ -36,7 +54,25 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
           />
         </div>
 
-        <AddLinkDialog categories={categories} />
+        <div className="flex items-center gap-2">
+          <AddLinkDialog categories={categories} />
+          {user ? (
+            <>
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => navigate("/admin")}>
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">অ্যাডমিন</span>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout} title="লগআউট">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => navigate("/auth")}>
+              <LogIn className="w-4 h-4" />
+              <span className="hidden sm:inline">লগইন</span>
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );
