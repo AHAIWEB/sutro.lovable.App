@@ -237,7 +237,7 @@ function PendingLinkCard({ link, categories, onApprove, onReject }: any) {
           <Badge variant="outline" className="mt-1 text-[10px]">{catName}</Badge>
         </div>
         <div className="flex gap-1.5">
-          <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={onApprove}>
+          <Button size="icon" variant="outline" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={onApprove}>
             <Check className="w-4 h-4" />
           </Button>
           <Button size="icon" variant="outline" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={onReject}>
