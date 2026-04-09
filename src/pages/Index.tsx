@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import NewsTicker from "@/components/NewsTicker";
 import SutraHeader from "@/components/SutraHeader";
-import CategoryGrid from "@/components/CategoryGrid";
-import MobileCategoryBar from "@/components/MobileCategoryBar";
+import LetterNav from "@/components/LetterNav";
 import LinkCard from "@/components/LinkCard";
 import { useCategories, useLinks } from "@/hooks/useLinks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,9 +67,9 @@ const Index = () => {
         totalLinks={links.length}
       />
 
-      {/* Category Grid — always visible */}
+      {/* Letter-based Navigation */}
       {!isLoading && (
-        <CategoryGrid
+        <LetterNav
           categories={categories}
           activeCategory={activeCategory}
           onSelect={setActiveCategory}
@@ -87,7 +86,7 @@ const Index = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {Array.from({ length: 12 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-xl" />
+              <Skeleton key={i} className="h-16 rounded-xl" />
             ))}
           </div>
         ) : groupedLinks && !searchQuery.trim() ? (
@@ -117,8 +116,8 @@ const Index = () => {
                       সব দেখুন →
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {groupedLinks[cat.id].slice(0, 4).map((link, i) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {groupedLinks[cat.id].slice(0, 8).map((link, i) => (
                       <LinkCard key={link.id} link={link} index={i} />
                     ))}
                   </div>
@@ -153,7 +152,7 @@ const Index = () => {
                 <p className="text-muted-foreground text-sm">কোনো লিংক পাওয়া যায়নি।</p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                 {filteredLinks.map((link, i) => (
                   <LinkCard key={link.id} link={link} index={i} />
                 ))}
