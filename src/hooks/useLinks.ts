@@ -41,6 +41,7 @@ export function useLinks(categoryId?: string) {
       let query = supabase
         .from("links")
         .select("*")
+        .eq("status", "approved")
         .order("visits", { ascending: false });
 
       if (categoryId && categoryId !== "all") {
@@ -48,6 +49,20 @@ export function useLinks(categoryId?: string) {
       }
 
       const { data, error } = await query;
+      if (error) throw error;
+      return data as LinkRow[];
+    },
+  });
+}
+
+export function useAllLinks() {
+  return useQuery({
+    queryKey: ["all-links"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("links")
+        .select("*")
+        .order("visits", { ascending: false });
       if (error) throw error;
       return data as LinkRow[];
     },
