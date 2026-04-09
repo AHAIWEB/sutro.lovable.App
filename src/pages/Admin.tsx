@@ -195,7 +195,10 @@ const Admin = () => {
 
           {/* ALL LINKS */}
           <TabsContent value="links" className="space-y-3">
-            <AddLinkForm categories={categories} onAdd={addLink} />
+            <div className="flex gap-2 flex-wrap">
+              <AddLinkForm categories={categories} onAdd={addLink} />
+              <BulkImportDialog categories={categories} />
+            </div>
             {approvedLinks.map((link) => (
               <LinkManageCard
                 key={link.id}
