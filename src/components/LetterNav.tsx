@@ -11,21 +11,22 @@ interface LetterNavProps {
   totalLinks: number;
 }
 
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-
 const LetterNav = ({ categories, activeCategory, onSelect, linkCounts, totalLinks }: LetterNavProps) => {
   const [openLetter, setOpenLetter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Group categories by first letter of name
-  const letterGroups: Record<string, CategoryRow[]> = {};
-  categories.forEach((cat) => {
+  // Separate letter categories (single char name like A, B, C) from other categories
+  const letterCategories = categories.filter((c) => /^[A-Z]$/.test(c.name));
+  const otherCategories = categories.filter((c) => !/^[A-Z]$/.test(c.name));
+
+  // Group non-letter categories by first letter
+  const otherByLetter: Record<string, CategoryRow[]> = {};
+  otherCategories.forEach((cat) => {
     const letter = cat.name.charAt(0).toUpperCase();
-    if (!letterGroups[letter]) letterGroups[letter] = [];
-    letterGroups[letter].push(cat);
+    if (!otherByLetter[letter]) otherByLetter[letter] = [];
+    otherByLetter[letter].push(cat);
   });
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -36,41 +37,52 @@ const LetterNav = ({ categories, activeCategory, onSelect, linkCounts, totalLink
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const activeCat = categories.find((c) => c.id === activeCategory);
-  const activeLetter = activeCat ? activeCat.name.charAt(0).toUpperCase() : null;
+  // Build display items: either a letter-category or a group
+  const displayLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   return (
-    <div ref={dropdownRef} className="py-4 px-4 sm:px-6 lg:px-8">
-      {/* All button + Letter buttons row */}
+    <div ref={dropdownRef} className="py-3 px-4 sm:px-6 lg:px-8 bg-card/50">
       <div className="flex items-center gap-1 flex-wrap">
         <button
           onClick={() => { onSelect("all"); setOpenLetter(null); }}
           className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
             activeCategory === "all"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
-          সব ({totalLinks})
+          সব ({totalLinks.toLocaleString("bn-BD")})
         </button>
 
-        {LETTERS.map((letter) => {
-          const group = letterGroups[letter];
-          if (!group || group.length === 0) return null;
+        {displayLetters.map((letter) => {
+          const letterCat = letterCategories.find((c) => c.name === letter);
+          const otherGroup = otherByLetter[letter] || [];
+          const hasLetterCat = !!letterCat;
+          const hasOtherGroup = otherGroup.length > 0;
 
-          const letterCount = group.reduce((sum, c) => sum + (linkCounts[c.id] ?? 0), 0);
-          if (letterCount === 0 && activeCategory !== "all") return null;
+          if (!hasLetterCat && !hasOtherGroup) return null;
 
-          const isActive = activeLetter === letter;
+          const letterCount = hasLetterCat ? (linkCounts[letterCat.id] ?? 0) : 0;
+          const otherCount = otherGroup.reduce((sum, c) => sum + (linkCounts[c.id] ?? 0), 0);
+          const totalCount = letterCount + otherCount;
+
+          if (totalCount === 0) return null;
+
+          const isActive = (hasLetterCat && activeCategory === letterCat.id) ||
+            otherGroup.some((c) => activeCategory === c.id);
           const isOpen = openLetter === letter;
+          const hasDropdown = hasOtherGroup || (hasLetterCat && hasOtherGroup);
 
           return (
             <div key={letter} className="relative">
               <button
                 onClick={() => {
-                  if (group.length === 1) {
-                    onSelect(group[0].id);
+                  if (hasLetterCat && !hasOtherGroup) {
+                    onSelect(letterCat.id);
+                    setOpenLetter(null);
+                  } else if (!hasLetterCat && otherGroup.length === 1) {
+                    onSelect(otherGroup[0].id);
                     setOpenLetter(null);
                   } else {
                     setOpenLetter(isOpen ? null : letter);
@@ -84,21 +96,31 @@ const LetterNav = ({ categories, activeCategory, onSelect, linkCounts, totalLink
                 )}
               >
                 {letter}
-                {group.length > 1 && (
+                <span className="text-[10px] opacity-70 ml-0.5">{totalCount}</span>
+                {hasDropdown && (
                   <ChevronDown className={cn("w-3 h-3 transition-transform", isOpen && "rotate-180")} />
                 )}
               </button>
 
-              {/* Dropdown */}
-              {isOpen && group.length > 1 && (
-                <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-xl shadow-lg min-w-[200px] max-h-[300px] overflow-y-auto py-1">
-                  {group.map((cat) => (
+              {isOpen && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-xl shadow-lg min-w-[220px] max-h-[300px] overflow-y-auto py-1">
+                  {hasLetterCat && (
+                    <button
+                      onClick={() => { onSelect(letterCat.id); setOpenLetter(null); }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors",
+                        activeCategory === letterCat.id && "bg-primary/10 text-primary"
+                      )}
+                    >
+                      <span>{letterCat.icon}</span>
+                      <span className="flex-1 truncate">{letter} — সব নিউজপেপার</span>
+                      <span className="text-xs text-muted-foreground">{letterCount}</span>
+                    </button>
+                  )}
+                  {otherGroup.map((cat) => (
                     <button
                       key={cat.id}
-                      onClick={() => {
-                        onSelect(cat.id);
-                        setOpenLetter(null);
-                      }}
+                      onClick={() => { onSelect(cat.id); setOpenLetter(null); }}
                       className={cn(
                         "w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors",
                         activeCategory === cat.id && "bg-primary/10 text-primary"
