@@ -21,6 +21,7 @@ import {
 import {
   LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen,
 } from "lucide-react";
+import BulkImportDialog from "@/components/BulkImportDialog";
 
 const Admin = () => {
   const navigate = useNavigate();
