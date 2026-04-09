@@ -34,23 +34,37 @@ export function useCategories() {
   });
 }
 
+// Fetch all approved links with pagination to handle >1000 rows
 export function useLinks(categoryId?: string) {
   return useQuery({
     queryKey: ["links", categoryId],
     queryFn: async () => {
-      let query = supabase
-        .from("links")
-        .select("*")
-        .eq("status", "approved")
-        .order("visits", { ascending: false });
+      const allData: LinkRow[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
 
-      if (categoryId && categoryId !== "all") {
-        query = query.eq("category_id", categoryId);
+      while (hasMore) {
+        let query = supabase
+          .from("links")
+          .select("*")
+          .eq("status", "approved")
+          .order("visits", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (categoryId && categoryId !== "all") {
+          query = query.eq("category_id", categoryId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        allData.push(...(data as LinkRow[]));
+        hasMore = data.length === pageSize;
+        from += pageSize;
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as LinkRow[];
+      return allData;
     },
   });
 }
@@ -59,12 +73,24 @@ export function useAllLinks() {
   return useQuery({
     queryKey: ["all-links"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("links")
-        .select("*")
-        .order("visits", { ascending: false });
-      if (error) throw error;
-      return data as LinkRow[];
+      const allData: LinkRow[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("links")
+          .select("*")
+          .order("visits", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        allData.push(...(data as LinkRow[]));
+        hasMore = data.length === pageSize;
+        from += pageSize;
+      }
+
+      return allData;
     },
   });
 }
