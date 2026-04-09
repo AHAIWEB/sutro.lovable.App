@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Globe, LogIn, UserPlus, ArrowLeft } from "lucide-react";
+import { Globe, LogIn, UserPlus, ArrowLeft, KeyRound } from "lucide-react";
+
+type AuthMode = "login" | "signup" | "reset";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,16 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isLogin) {
+      if (mode === "reset") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
+        if (error) throw error;
+        toast({
+          title: "পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে ✅",
+          description: "আপনার ইমেইল চেক করুন।",
+        });
+      } else if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast({ title: "লগইন সফল! ✅" });
@@ -56,6 +67,24 @@ const Auth = () => {
     }
   };
 
+  const titles: Record<AuthMode, string> = {
+    login: "অ্যাডমিন প্যানেলে লগইন করুন",
+    signup: "নতুন অ্যাকাউন্ট তৈরি করুন",
+    reset: "পাসওয়ার্ড রিসেট করুন",
+  };
+
+  const buttonLabels: Record<AuthMode, string> = {
+    login: "লগইন",
+    signup: "সাইনআপ",
+    reset: "রিসেট লিংক পাঠান",
+  };
+
+  const buttonIcons: Record<AuthMode, React.ReactNode> = {
+    login: <LogIn className="w-4 h-4" />,
+    signup: <UserPlus className="w-4 h-4" />,
+    reset: <KeyRound className="w-4 h-4" />,
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
@@ -64,9 +93,7 @@ const Auth = () => {
             <Globe className="w-6 h-6 text-primary-foreground" />
           </div>
           <CardTitle className="font-display text-2xl">সূত্র</CardTitle>
-          <CardDescription>
-            {isLogin ? "অ্যাডমিন প্যানেলে লগইন করুন" : "নতুন অ্যাকাউন্ট তৈরি করুন"}
-          </CardDescription>
+          <CardDescription>{titles[mode]}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,26 +104,42 @@ const Auth = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <Input
-              type="password"
-              placeholder="পাসওয়ার্ড"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
+            {mode !== "reset" && (
+              <Input
+                type="password"
+                placeholder="পাসওয়ার্ড"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            )}
             <Button type="submit" className="w-full gap-2" disabled={loading}>
-              {isLogin ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-              {loading ? "অপেক্ষা করুন..." : isLogin ? "লগইন" : "সাইনআপ"}
+              {buttonIcons[mode]}
+              {loading ? "অপেক্ষা করুন..." : buttonLabels[mode]}
             </Button>
           </form>
           <div className="mt-4 text-center space-y-2">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary hover:underline"
-            >
-              {isLogin ? "অ্যাকাউন্ট নেই? সাইনআপ করুন" : "অ্যাকাউন্ট আছে? লগইন করুন"}
-            </button>
+            {mode === "login" && (
+              <>
+                <button onClick={() => setMode("reset")} className="text-sm text-primary hover:underline block mx-auto">
+                  পাসওয়ার্ড ভুলে গেছেন?
+                </button>
+                <button onClick={() => setMode("signup")} className="text-sm text-primary hover:underline block mx-auto">
+                  অ্যাকাউন্ট নেই? সাইনআপ করুন
+                </button>
+              </>
+            )}
+            {mode === "signup" && (
+              <button onClick={() => setMode("login")} className="text-sm text-primary hover:underline">
+                অ্যাকাউন্ট আছে? লগইন করুন
+              </button>
+            )}
+            {mode === "reset" && (
+              <button onClick={() => setMode("login")} className="text-sm text-primary hover:underline">
+                ← লগইনে ফিরে যান
+              </button>
+            )}
             <div>
               <button
                 onClick={() => navigate("/")}
