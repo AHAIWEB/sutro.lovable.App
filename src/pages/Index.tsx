@@ -140,7 +140,7 @@ const Index = () => {
                       <span className="font-meta text-primary">সব দেখুন →</span>
                     </button>
                     <div className="p-4">
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
                         {catLinks.slice(0, 16).map((link, i) => (
                           <LinkCard key={link.id} link={link} index={i} />
                         ))}
@@ -185,7 +185,7 @@ const Index = () => {
                 <p className="text-muted-foreground text-sm">কোনো লিংক পাওয়া যায়নি।</p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
                 {filteredLinks.map((link, i) => (
                   <LinkCard key={link.id} link={link} index={i} />
                 ))}
