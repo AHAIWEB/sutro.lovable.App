@@ -100,14 +100,31 @@ serve(async (req) => {
       });
     }
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "bn-BD,bn;q=0.9,en;q=0.8",
-      },
-      redirect: "follow",
-    });
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "bn-BD,bn;q=0.9,en;q=0.8",
+      "Referer": new URL(url).origin + "/",
+    };
+    
+    let response: Response;
+    try {
+      response = await fetch(url, { headers, redirect: "follow" });
+    } catch {
+      // Some sites need different approach
+      response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+        redirect: "follow",
+      });
+    }
+
+    if (!response.ok) {
+      // Retry with Googlebot UA if first attempt fails
+      response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+        redirect: "follow",
+      });
+    }
 
     if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
     const text = await response.text();
