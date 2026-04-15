@@ -230,6 +230,16 @@ const Admin = () => {
               />
             ))}
           </TabsContent>
+
+          {/* SCRAPER */}
+          <TabsContent value="scraper">
+            <ScraperPanel />
+          </TabsContent>
+
+          {/* FEATURED POSTS */}
+          <TabsContent value="featured">
+            <FeaturedPostsAdmin />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
