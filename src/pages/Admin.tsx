@@ -19,9 +19,11 @@ import {
   useAddCategory, useUpdateCategory, useDeleteCategory,
 } from "@/hooks/useAdmin";
 import {
-  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen,
+  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen, Star, Search as SearchIcon,
 } from "lucide-react";
 import BulkImportDialog from "@/components/BulkImportDialog";
+import ScraperPanel from "@/components/ScraperPanel";
+import FeaturedPostsAdmin from "@/components/FeaturedPostsAdmin";
 
 const Admin = () => {
   const navigate = useNavigate();
