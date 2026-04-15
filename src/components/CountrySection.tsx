@@ -21,7 +21,6 @@ const CountrySection = ({ country, links, categories, subCategories }: CountrySe
     [links, country.id]
   );
 
-  // Group by sub_category_id
   const groupedBySub = useMemo(() => {
     const groups: Record<string, LinkRow[]> = {};
     countryLinks.forEach((l) => {
@@ -38,12 +37,10 @@ const CountrySection = ({ country, links, categories, subCategories }: CountrySe
 
   if (countryLinks.length === 0) return null;
 
-  // Get sub-categories that have links for this country
   const activeSubCategories = subCategories.filter((sc) => groupedBySub[sc.id]?.length > 0);
 
   return (
     <section className="border border-border rounded-xl overflow-hidden bg-card">
-      {/* Country header - collapsible */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
@@ -55,11 +52,7 @@ const CountrySection = ({ country, links, categories, subCategories }: CountrySe
             {countryLinks.length.toLocaleString("bn-BD")} টি
           </span>
         </div>
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        )}
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
 
       <AnimatePresence initial={false}>
@@ -70,7 +63,6 @@ const CountrySection = ({ country, links, categories, subCategories }: CountrySe
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            {/* Sub-category tabs */}
             {activeSubCategories.length > 0 && (
               <div className="flex gap-1 px-4 py-2 overflow-x-auto border-b border-border/60 bg-background/50">
                 <button
@@ -113,18 +105,12 @@ const CountrySection = ({ country, links, categories, subCategories }: CountrySe
               </div>
             )}
 
-            {/* Links grid */}
             <div className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                {displayLinks.slice(0, 20).map((link, i) => (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                {displayLinks.map((link, i) => (
                   <LinkCard key={link.id} link={link} index={i} />
                 ))}
               </div>
-              {displayLinks.length > 20 && (
-                <p className="text-center font-meta text-muted-foreground mt-3">
-                  আরও {(displayLinks.length - 20).toLocaleString("bn-BD")} টি সাইট আছে
-                </p>
-              )}
             </div>
           </motion.div>
         )}
