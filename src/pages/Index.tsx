@@ -7,7 +7,7 @@ import CountrySection from "@/components/CountrySection";
 import FeaturedSlider from "@/components/FeaturedSlider";
 import LinkCard from "@/components/LinkCard";
 import { useCategories, useLinks } from "@/hooks/useLinks";
-import { useCountries, useSubCategories } from "@/hooks/useCountries";
+import { useCountries, useSubCategories, CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
