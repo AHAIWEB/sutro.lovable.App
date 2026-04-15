@@ -84,6 +84,56 @@ function parseRssFeed(xml: string) {
   return items;
 }
 
+// Multiple UA strategies to try
+const UA_STRATEGIES = [
+  {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "bn-BD,bn;q=0.9,en;q=0.8",
+    "Accept-Encoding": "gzip, deflate",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+  {
+    "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  },
+  {
+    "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+  },
+  {
+    "User-Agent": "Twitterbot/1.0",
+  },
+];
+
+async function fetchWithRetries(url: string): Promise<Response> {
+  let lastResponse: Response | null = null;
+
+  for (const headers of UA_STRATEGIES) {
+    try {
+      const resp = await fetch(url, { headers, redirect: "follow" });
+      if (resp.ok) return resp;
+      lastResponse = resp;
+    } catch {
+      // continue to next strategy
+    }
+  }
+
+  // If all failed, try Google's web cache
+  try {
+    const cacheUrl = `https://webcache.googleusercontent.com/search?q=cache:${encodeURIComponent(url)}`;
+    const resp = await fetch(cacheUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" },
+      redirect: "follow",
+    });
+    if (resp.ok) return resp;
+  } catch {
+    // ignore
+  }
+
+  if (lastResponse) return lastResponse;
+  throw new Error("All fetch attempts failed");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -91,7 +141,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { url, mode } = body; // mode: "metadata" | "rss" | "category"
+    const { url, mode } = body;
     
     if (!url) {
       return new Response(JSON.stringify({ error: "URL required" }), {
@@ -100,37 +150,42 @@ serve(async (req) => {
       });
     }
 
-    const headers: Record<string, string> = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "bn-BD,bn;q=0.9,en;q=0.8",
-      "Referer": new URL(url).origin + "/",
-    };
-    
     let response: Response;
     try {
-      response = await fetch(url, { headers, redirect: "follow" });
-    } catch {
-      // Some sites need different approach
-      response = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
-        redirect: "follow",
+      response = await fetchWithRetries(url);
+    } catch (e: any) {
+      // Return a graceful fallback instead of 500
+      const domain = new URL(url).hostname.replace("www.", "");
+      const fallback = {
+        title: domain,
+        image: null,
+        description: null,
+        site_name: domain,
+        warning: `Could not fetch: site may block automated requests (${e.message})`,
+      };
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (!response.ok) {
-      // Retry with Googlebot UA if first attempt fails
-      response = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
-        redirect: "follow",
+      // Return graceful fallback with domain name instead of crashing
+      const domain = new URL(url).hostname.replace("www.", "");
+      const fallback = {
+        title: domain,
+        image: null,
+        description: null,
+        site_name: domain,
+        warning: `Site returned ${response.status} — may use Cloudflare or bot protection`,
+      };
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
     const text = await response.text();
 
     if (mode === "rss") {
-      // Parse RSS/Atom
       const items = parseRssFeed(text);
       return new Response(JSON.stringify({ items, count: items.length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -138,7 +193,6 @@ serve(async (req) => {
     }
 
     if (mode === "category") {
-      // Scrape links from a news category page, extract articles with OG images
       const articles: { title: string; url: string; image: string | null; description: string | null }[] = [];
       const linkRegex = /<a\s[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
       const baseUrl = new URL(url);
@@ -155,7 +209,6 @@ serve(async (req) => {
           if (!href.startsWith("http")) href = new URL(href, url).href;
         } catch { continue; }
 
-        // Only same-domain article links
         try {
           if (new URL(href).hostname !== baseUrl.hostname) continue;
         } catch { continue; }
@@ -163,7 +216,6 @@ serve(async (req) => {
         if (seen.has(href)) continue;
         seen.add(href);
 
-        // Try to find associated image
         const surroundingHtml = text.substring(Math.max(0, m.index - 500), m.index + m[0].length + 500);
         const imgMatch = surroundingHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
         let image = imgMatch ? imgMatch[1] : null;
