@@ -193,40 +193,85 @@ serve(async (req) => {
     }
 
     if (mode === "category") {
-      const articles: { title: string; url: string; image: string | null; description: string | null }[] = [];
-      const linkRegex = /<a\s[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+      const articles: { title: string; url: string; image: string | null; description: string | null; source: string | null }[] = [];
       const baseUrl = new URL(url);
-      let m;
       const seen = new Set<string>();
+      const siteName = baseUrl.hostname.replace("www.", "");
 
-      while ((m = linkRegex.exec(text)) !== null) {
-        let href = m[1];
-        const inner = m[2].replace(/<[^>]*>/g, "").trim();
-        if (!inner || inner.length < 10) continue;
+      // Strategy 1: Extract article-like blocks (cards with image + headline)
+      // Look for common article card patterns: <article>, <div class="*card*">, <div class="*news*">, <div class="*story*">
+      const articleBlockRegex = /<(?:article|div|li|section)[^>]*class=["'][^"']*(?:card|news|story|item|post|article|entry|headline|feature)[^"']*["'][^>]*>([\s\S]*?)<\/(?:article|div|li|section)>/gi;
+      let blockMatch;
+      while ((blockMatch = articleBlockRegex.exec(text)) !== null) {
+        const block = blockMatch[1];
+        // Extract link
+        const linkMatch = block.match(/<a\s[^>]*href=["']([^"'#]+)["'][^>]*>/i);
+        if (!linkMatch) continue;
+        let href = linkMatch[1];
         if (href.startsWith("javascript:") || href.startsWith("mailto:")) continue;
-
         try {
           if (!href.startsWith("http")) href = new URL(href, url).href;
-        } catch { continue; }
-
-        try {
           if (new URL(href).hostname !== baseUrl.hostname) continue;
         } catch { continue; }
-
         if (seen.has(href)) continue;
+
+        // Extract title - prefer headline tags, then link text
+        const titleMatch = block.match(/<(?:h[1-6])[^>]*>([\s\S]*?)<\/(?:h[1-6])>/i)
+          || block.match(/<a[^>]*>([\s\S]*?)<\/a>/i);
+        const title = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, "").trim() : "";
+        if (!title || title.length < 5) continue;
+
         seen.add(href);
 
-        const surroundingHtml = text.substring(Math.max(0, m.index - 500), m.index + m[0].length + 500);
-        const imgMatch = surroundingHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+        // Extract image
+        const imgMatch = block.match(/<img[^>]+(?:src|data-src|data-lazy-src)=["']([^"']+)["']/i);
         let image = imgMatch ? imgMatch[1] : null;
         if (image && !image.startsWith("http")) {
           try { image = new URL(image, url).href; } catch { image = null; }
         }
 
-        articles.push({ title: inner, url: href, image, description: null });
+        // Extract description from <p> or summary text
+        const descMatch = block.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+        const description = descMatch ? descMatch[1].replace(/<[^>]*>/g, "").trim().slice(0, 200) : null;
+
+        articles.push({ title, url: href, image, description, source: siteName });
       }
 
-      return new Response(JSON.stringify({ items: articles.slice(0, 30), count: articles.length }), {
+      // Strategy 2: Fallback - scan all <a> tags with nearby images (if strategy 1 found few)
+      if (articles.length < 5) {
+        const linkRegex = /<a\s[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        let m;
+        while ((m = linkRegex.exec(text)) !== null) {
+          let href = m[1];
+          const innerHtml = m[2];
+          const inner = innerHtml.replace(/<[^>]*>/g, "").trim();
+          if (!inner || inner.length < 10) continue;
+          if (href.startsWith("javascript:") || href.startsWith("mailto:")) continue;
+          try {
+            if (!href.startsWith("http")) href = new URL(href, url).href;
+            if (new URL(href).hostname !== baseUrl.hostname) continue;
+          } catch { continue; }
+          if (seen.has(href)) continue;
+          seen.add(href);
+
+          // Check if this link contains or is near an image
+          const inlineImg = innerHtml.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i);
+          const surroundingHtml = text.substring(Math.max(0, m.index - 500), m.index + m[0].length + 500);
+          const nearbyImg = surroundingHtml.match(/<img[^>]+(?:src|data-src|data-lazy-src)=["']([^"']+)["']/i);
+          let image = inlineImg ? inlineImg[1] : (nearbyImg ? nearbyImg[1] : null);
+          if (image && !image.startsWith("http")) {
+            try { image = new URL(image, url).href; } catch { image = null; }
+          }
+
+          // Skip if it looks like a nav/menu link (short text, no image, common nav patterns)
+          const isNavLink = !image && inner.length < 30 && !href.match(/\/\d{4}\/|\/article|\/news|\/post|\/story/i);
+          if (isNavLink && articles.length > 0) continue;
+
+          articles.push({ title: inner, url: href, image, description: null, source: siteName });
+        }
+      }
+
+      return new Response(JSON.stringify({ items: articles.slice(0, 50), count: articles.length, source: siteName }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
