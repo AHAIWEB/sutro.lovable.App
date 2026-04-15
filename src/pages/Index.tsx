@@ -42,7 +42,6 @@ const Index = () => {
       result = result.filter((l) => l.country_id === activeCountry);
     }
     if (activeCategory !== "all") {
-      // Check if it's a sub_category or a regular category
       const isSub = subCategories.some((sc) => sc.id === activeCategory);
       if (isSub) {
         result = result.filter((l) => l.sub_category_id === activeCategory);
@@ -59,7 +58,7 @@ const Index = () => {
     return result.sort((a, b) => b.visits - a.visits);
   }, [links, activeCountry, activeCategory, searchQuery, subCategories]);
 
-  // Countries that have links
+  // Countries that have links with country_id set
   const activeCountries = useMemo(
     () => countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0),
     [countries, countryLinkCounts]
@@ -67,11 +66,7 @@ const Index = () => {
 
   const isLoading = linksLoading || catsLoading || countriesLoading;
 
-  // Show country-based grouped view when no filters
   const showCountryView = activeCountry === "all" && activeCategory === "all" && !searchQuery.trim();
-
-  // Show category grouped view for A-Z letter navigation
-  const showCategoryView = activeCountry === "all" && activeCategory !== "all" && !searchQuery.trim();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -85,7 +80,6 @@ const Index = () => {
 
       <FeaturedSlider />
 
-      {/* Navigation */}
       {!isLoading && (
         <CountryDropdownNav
           countries={countries}
@@ -101,19 +95,29 @@ const Index = () => {
         />
       )}
 
-      {/* Links Section */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-xl" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
         ) : showCountryView ? (
-          /* Country-based grouped view */
           <div className="space-y-6">
-            {/* Links without country - grouped by A-Z categories */}
+            {/* Country sections with logo grid */}
+            {activeCountries.map((country) => (
+              <CountrySection
+                key={country.id}
+                country={country}
+                links={links}
+                categories={categories}
+                subCategories={subCategories}
+              />
+            ))}
+
+            {/* Uncategorized links (no country) grouped by A-Z */}
             {categories
+              .filter((cat) => /^letter-[a-z]$/.test(cat.id))
               .filter((cat) => {
                 const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
                 return catLinks.length > 0;
@@ -136,8 +140,8 @@ const Index = () => {
                       <span className="font-meta text-primary">সব দেখুন →</span>
                     </button>
                     <div className="p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                        {catLinks.slice(0, 8).map((link, i) => (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                        {catLinks.slice(0, 16).map((link, i) => (
                           <LinkCard key={link.id} link={link} index={i} />
                         ))}
                       </div>
@@ -145,20 +149,8 @@ const Index = () => {
                   </section>
                 );
               })}
-
-            {/* Country sections */}
-            {activeCountries.map((country) => (
-              <CountrySection
-                key={country.id}
-                country={country}
-                links={links}
-                categories={categories}
-                subCategories={subCategories}
-              />
-            ))}
           </div>
         ) : (
-          /* Filtered view */
           <>
             <div className="flex items-center gap-2 mb-5">
               {activeCountry !== "all" && (
@@ -188,16 +180,12 @@ const Index = () => {
             </div>
 
             {filteredLinks.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-20"
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
                 <p className="text-4xl mb-3">🔍</p>
                 <p className="text-muted-foreground text-sm">কোনো লিংক পাওয়া যায়নি।</p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                 {filteredLinks.map((link, i) => (
                   <LinkCard key={link.id} link={link} index={i} />
                 ))}
