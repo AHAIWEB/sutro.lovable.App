@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CategoryRow } from "@/hooks/useLinks";
 import type { CountryRow, SubCategoryRow } from "@/hooks/useCountries";
+import { CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 
 interface CountryDropdownNavProps {
   countries: CountryRow[];
