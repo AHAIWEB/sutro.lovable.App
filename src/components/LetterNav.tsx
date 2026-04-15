@@ -56,7 +56,7 @@ const LetterNav = ({ categories, activeCategory, onSelect, linkCounts, totalLink
         </button>
 
         {displayLetters.map((letter) => {
-          const letterCat = letterCategories.find((c) => c.name === letter);
+          const letterCat = letterCategories.find((c) => c.id === `letter-${letter.toLowerCase()}`);
           const otherGroup = otherByLetter[letter] || [];
           const hasLetterCat = !!letterCat;
           const hasOtherGroup = otherGroup.length > 0;
