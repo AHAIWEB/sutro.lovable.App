@@ -193,40 +193,79 @@ serve(async (req) => {
     }
 
     if (mode === "category") {
-      const articles: { title: string; url: string; image: string | null; description: string | null }[] = [];
-      const linkRegex = /<a\s[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+      const articles: { title: string; url: string; image: string | null; description: string | null; source: string | null }[] = [];
       const baseUrl = new URL(url);
-      let m;
       const seen = new Set<string>();
+      const siteName = baseUrl.hostname.replace("www.", "");
+
+      // Strategy 1: Find all <a> tags, prioritize those with article-like URLs (date patterns, /article/, numeric IDs)
+      const linkRegex = /<a\s[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+      let m;
+      const allLinks: { href: string; title: string; index: number; innerHtml: string; isArticle: boolean }[] = [];
 
       while ((m = linkRegex.exec(text)) !== null) {
         let href = m[1];
-        const inner = m[2].replace(/<[^>]*>/g, "").trim();
-        if (!inner || inner.length < 10) continue;
+        const innerHtml = m[2];
+        const title = innerHtml.replace(/<[^>]*>/g, "").trim();
+        if (!title || title.length < 5) continue;
         if (href.startsWith("javascript:") || href.startsWith("mailto:")) continue;
-
         try {
           if (!href.startsWith("http")) href = new URL(href, url).href;
-        } catch { continue; }
-
-        try {
           if (new URL(href).hostname !== baseUrl.hostname) continue;
         } catch { continue; }
-
         if (seen.has(href)) continue;
         seen.add(href);
 
-        const surroundingHtml = text.substring(Math.max(0, m.index - 500), m.index + m[0].length + 500);
-        const imgMatch = surroundingHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+        // Detect article URLs by pattern: contains dates, numeric IDs, or article-like paths
+        const isArticle = /\/\d{4}\/\d{1,2}\/|\/\d{5,}|\/article[s]?\/|\/news\/|\/post\/|\/story\//i.test(href);
+        allLinks.push({ href, title, index: m.index, innerHtml, isArticle });
+      }
+
+      // Separate articles from nav links
+      const articleLinks = allLinks.filter(l => l.isArticle);
+      const navLinks = allLinks.filter(l => !l.isArticle);
+
+      // Process article links first (these are actual posts)
+      for (const link of articleLinks) {
+        // Search for nearby image in surrounding HTML (1000 chars around)
+        const surroundingHtml = text.substring(Math.max(0, link.index - 800), link.index + link.title.length + 800);
+        const imgMatch = surroundingHtml.match(/<img[^>]+(?:src|data-src|data-lazy-src|data-original)=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)[^"']*)["']/i)
+          || surroundingHtml.match(/<img[^>]+(?:src|data-src|data-lazy-src)=["']([^"']+)["']/i);
         let image = imgMatch ? imgMatch[1] : null;
         if (image && !image.startsWith("http")) {
           try { image = new URL(image, url).href; } catch { image = null; }
         }
+        // Skip tiny icons/tracking pixels
+        if (image && /1x1|pixel|spacer|blank|logo|icon|favicon/i.test(image)) image = null;
 
-        articles.push({ title: inner, url: href, image, description: null });
+        // Extract description from nearby <p> tags
+        const descMatch = surroundingHtml.match(/<p[^>]*>([\s\S]{20,}?)<\/p>/i);
+        const description = descMatch ? descMatch[1].replace(/<[^>]*>/g, "").trim().slice(0, 200) : null;
+
+        articles.push({ title: link.title, url: link.href, image, description, source: siteName });
       }
 
-      return new Response(JSON.stringify({ items: articles.slice(0, 30), count: articles.length }), {
+      // If few articles found, also include nav links as category pages
+      if (articles.length < 3) {
+        for (const link of navLinks) {
+          if (link.title.length < 10 && articles.length > 5) continue;
+          const surroundingHtml = text.substring(Math.max(0, link.index - 500), link.index + link.title.length + 500);
+          const imgMatch = surroundingHtml.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i);
+          let image = imgMatch ? imgMatch[1] : null;
+          if (image && !image.startsWith("http")) {
+            try { image = new URL(image, url).href; } catch { image = null; }
+          }
+          articles.push({ title: link.title, url: link.href, image, description: null, source: siteName });
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        items: articles.slice(0, 50), 
+        count: articles.length, 
+        source: siteName,
+        article_count: articleLinks.length,
+        nav_count: navLinks.length
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
