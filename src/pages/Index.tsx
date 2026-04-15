@@ -111,23 +111,20 @@ const Index = () => {
         ) : showCountryView ? (
           <div className="space-y-6">
             {/* Country sections with logo grid */}
-            {activeCountries.map((country) => (
-              <CountrySection
-                key={country.id}
-                country={country}
-                links={links}
-                categories={categories}
-                subCategories={subCategories}
-              />
+            {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => (
+              <div key={cont} className="space-y-3">
+                <h2 className="font-display text-lg text-foreground px-1">{CONTINENT_LABELS[cont] || cont}</h2>
+                {countriesByContinent[cont].map((country) => (
+                  <CountrySection
+                    key={country.id}
+                    country={country}
+                    links={links}
+                    categories={categories}
+                    subCategories={subCategories}
+                  />
+                ))}
+              </div>
             ))}
-
-            {/* Uncategorized links (no country) grouped by A-Z */}
-            {categories
-              .filter((cat) => /^letter-[a-z]$/.test(cat.id))
-              .filter((cat) => {
-                const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
-                return catLinks.length > 0;
-              })
               .map((cat) => {
                 const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
                 return (
