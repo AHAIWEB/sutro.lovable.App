@@ -41,13 +41,90 @@ export type Database = {
         }
         Relationships: []
       }
+      countries: {
+        Row: {
+          code: string
+          created_at: string
+          flag: string
+          id: string
+          name: string
+          name_en: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          flag?: string
+          id: string
+          name: string
+          name_en: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          flag?: string
+          id?: string
+          name?: string
+          name_en?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      featured_posts: {
+        Row: {
+          auto_fetch: boolean
+          created_at: string
+          description: string | null
+          fetch_url: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          sort_order: number
+          source_name: string | null
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          auto_fetch?: boolean
+          created_at?: string
+          description?: string | null
+          fetch_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          source_name?: string | null
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          auto_fetch?: boolean
+          created_at?: string
+          description?: string | null
+          fetch_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          source_name?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       links: {
         Row: {
           category_id: string
+          country_id: string | null
           created_at: string
           favicon: string | null
           id: string
           status: string
+          sub_category_id: string | null
           submitted_by: string | null
           title: string
           updated_at: string
@@ -56,10 +133,12 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          country_id?: string | null
           created_at?: string
           favicon?: string | null
           id?: string
           status?: string
+          sub_category_id?: string | null
           submitted_by?: string | null
           title: string
           updated_at?: string
@@ -68,10 +147,12 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          country_id?: string | null
           created_at?: string
           favicon?: string | null
           id?: string
           status?: string
+          sub_category_id?: string | null
           submitted_by?: string | null
           title?: string
           updated_at?: string
@@ -86,7 +167,115 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "links_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "links_sub_category_id_fkey"
+            columns: ["sub_category_id"]
+            isOneToOne: false
+            referencedRelation: "sub_categories"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      scraper_configs: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          name: string
+          selector_links: string | null
+          selector_logo: string | null
+          selector_title: string | null
+          source_url: string
+          target_category_id: string | null
+          target_country_id: string | null
+          target_sub_category_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name: string
+          selector_links?: string | null
+          selector_logo?: string | null
+          selector_title?: string | null
+          source_url: string
+          target_category_id?: string | null
+          target_country_id?: string | null
+          target_sub_category_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name?: string
+          selector_links?: string | null
+          selector_logo?: string | null
+          selector_title?: string | null
+          source_url?: string
+          target_category_id?: string | null
+          target_country_id?: string | null
+          target_sub_category_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scraper_configs_target_category_id_fkey"
+            columns: ["target_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scraper_configs_target_country_id_fkey"
+            columns: ["target_country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scraper_configs_target_sub_category_id_fkey"
+            columns: ["target_sub_category_id"]
+            isOneToOne: false
+            referencedRelation: "sub_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          name_en: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id: string
+          name: string
+          name_en: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          name_en?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
