@@ -59,10 +59,16 @@ const Index = () => {
   }, [links, activeCountry, activeCategory, searchQuery, subCategories]);
 
   // Countries that have links with country_id set
-  const activeCountries = useMemo(
-    () => countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0),
-    [countries, countryLinkCounts]
-  );
+  const countriesByContinent = useMemo(() => {
+    const active = countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0);
+    const grouped: Record<string, typeof active> = {};
+    active.forEach((c) => {
+      const cont = c.continent || "other";
+      if (!grouped[cont]) grouped[cont] = [];
+      grouped[cont].push(c);
+    });
+    return grouped;
+  }, [countries, countryLinkCounts]);
 
   const isLoading = linksLoading || catsLoading || countriesLoading;
 
