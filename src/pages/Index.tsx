@@ -2,17 +2,23 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import NewsTicker from "@/components/NewsTicker";
 import SutraHeader from "@/components/SutraHeader";
-import LetterNav from "@/components/LetterNav";
+import CountryDropdownNav from "@/components/CountryDropdownNav";
+import CountrySection from "@/components/CountrySection";
+import FeaturedSlider from "@/components/FeaturedSlider";
 import LinkCard from "@/components/LinkCard";
 import { useCategories, useLinks } from "@/hooks/useLinks";
+import { useCountries, useSubCategories } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
+  const [activeCountry, setActiveCountry] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: categories = [], isLoading: catsLoading } = useCategories();
   const { data: links = [], isLoading: linksLoading } = useLinks();
+  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+  const { data: subCategories = [] } = useSubCategories();
 
   const linkCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -22,10 +28,27 @@ const Index = () => {
     return counts;
   }, [links]);
 
+  const countryLinkCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    links.forEach((l) => {
+      if (l.country_id) counts[l.country_id] = (counts[l.country_id] ?? 0) + 1;
+    });
+    return counts;
+  }, [links]);
+
   const filteredLinks = useMemo(() => {
     let result = links;
+    if (activeCountry !== "all") {
+      result = result.filter((l) => l.country_id === activeCountry);
+    }
     if (activeCategory !== "all") {
-      result = result.filter((l) => l.category_id === activeCategory);
+      // Check if it's a sub_category or a regular category
+      const isSub = subCategories.some((sc) => sc.id === activeCategory);
+      if (isSub) {
+        result = result.filter((l) => l.sub_category_id === activeCategory);
+      } else {
+        result = result.filter((l) => l.category_id === activeCategory);
+      }
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -34,28 +57,21 @@ const Index = () => {
       );
     }
     return result.sort((a, b) => b.visits - a.visits);
-  }, [links, activeCategory, searchQuery]);
+  }, [links, activeCountry, activeCategory, searchQuery, subCategories]);
 
-  const activeCatName = activeCategory === "all"
-    ? "সব সাইট"
-    : categories.find((c) => c.id === activeCategory)?.name ?? "সব সাইট";
+  // Countries that have links
+  const activeCountries = useMemo(
+    () => countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0),
+    [countries, countryLinkCounts]
+  );
 
-  const activeCatIcon = activeCategory === "all"
-    ? "📋"
-    : categories.find((c) => c.id === activeCategory)?.icon ?? "📋";
+  const isLoading = linksLoading || catsLoading || countriesLoading;
 
-  // Group links by category when showing "all"
-  const groupedLinks = useMemo(() => {
-    if (activeCategory !== "all" || searchQuery.trim()) return null;
-    const groups: Record<string, typeof links> = {};
-    filteredLinks.forEach((link) => {
-      if (!groups[link.category_id]) groups[link.category_id] = [];
-      groups[link.category_id].push(link);
-    });
-    return groups;
-  }, [filteredLinks, activeCategory, searchQuery]);
+  // Show country-based grouped view when no filters
+  const showCountryView = activeCountry === "all" && activeCategory === "all" && !searchQuery.trim();
 
-  const isLoading = linksLoading || catsLoading;
+  // Show category grouped view for A-Z letter navigation
+  const showCategoryView = activeCountry === "all" && activeCategory !== "all" && !searchQuery.trim();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -67,19 +83,23 @@ const Index = () => {
         totalLinks={links.length}
       />
 
-      {/* Letter-based Navigation */}
+      <FeaturedSlider />
+
+      {/* Navigation */}
       {!isLoading && (
-        <LetterNav
+        <CountryDropdownNav
+          countries={countries}
           categories={categories}
+          subCategories={subCategories}
+          activeCountry={activeCountry}
           activeCategory={activeCategory}
-          onSelect={setActiveCategory}
+          onSelectCountry={setActiveCountry}
+          onSelectCategory={setActiveCategory}
           linkCounts={linkCounts}
+          countryLinkCounts={countryLinkCounts}
           totalLinks={links.length}
         />
       )}
-
-      {/* Divider */}
-      <div className="border-t border-border" />
 
       {/* Links Section */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
@@ -89,59 +109,84 @@ const Index = () => {
               <Skeleton key={i} className="h-16 rounded-xl" />
             ))}
           </div>
-        ) : groupedLinks && !searchQuery.trim() ? (
-          /* Grouped by category view */
-          <div className="space-y-8">
+        ) : showCountryView ? (
+          /* Country-based grouped view */
+          <div className="space-y-6">
+            {/* Links without country - grouped by A-Z categories */}
             {categories
-              .filter((cat) => groupedLinks[cat.id]?.length)
-              .map((cat) => (
-                <section key={cat.id}>
-                  <div className="flex items-center justify-between mb-3">
+              .filter((cat) => {
+                const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
+                return catLinks.length > 0;
+              })
+              .map((cat) => {
+                const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
+                return (
+                  <section key={cat.id} className="border border-border rounded-xl overflow-hidden bg-card">
                     <button
-                      onClick={() => setActiveCategory(cat.id)}
-                      className="flex items-center gap-2 group"
+                      onClick={() => { setActiveCountry("all"); setActiveCategory(cat.id); }}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
                     >
-                      <span className="text-lg">{cat.icon}</span>
-                      <h3 className="font-display text-base text-foreground group-hover:text-primary transition-colors">
-                        {cat.name}
-                      </h3>
-                      <span className="font-meta text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        {groupedLinks[cat.id].length}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{cat.icon}</span>
+                        <h3 className="font-display text-base text-foreground">{cat.name}</h3>
+                        <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          {catLinks.length.toLocaleString("bn-BD")} টি
+                        </span>
+                      </div>
+                      <span className="font-meta text-primary">সব দেখুন →</span>
                     </button>
-                    <button
-                      onClick={() => setActiveCategory(cat.id)}
-                      className="font-meta text-primary hover:underline"
-                    >
-                      সব দেখুন →
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {groupedLinks[cat.id].slice(0, 8).map((link, i) => (
-                      <LinkCard key={link.id} link={link} index={i} />
-                    ))}
-                  </div>
-                </section>
-              ))}
+                    <div className="p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                        {catLinks.slice(0, 8).map((link, i) => (
+                          <LinkCard key={link.id} link={link} index={i} />
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                );
+              })}
+
+            {/* Country sections */}
+            {activeCountries.map((country) => (
+              <CountrySection
+                key={country.id}
+                country={country}
+                links={links}
+                categories={categories}
+                subCategories={subCategories}
+              />
+            ))}
           </div>
         ) : (
-          /* Filtered single-category or search view */
+          /* Filtered view */
           <>
             <div className="flex items-center gap-2 mb-5">
-              <span className="text-lg">{activeCatIcon}</span>
-              <h2 className="font-display text-lg text-foreground">{activeCatName}</h2>
+              {activeCountry !== "all" && (
+                <span className="text-lg">
+                  {countries.find((c) => c.id === activeCountry)?.flag || "🏳️"}
+                </span>
+              )}
+              <h2 className="font-display text-lg text-foreground">
+                {activeCountry !== "all"
+                  ? countries.find((c) => c.id === activeCountry)?.name
+                  : activeCategory !== "all"
+                    ? (subCategories.find((sc) => sc.id === activeCategory)?.name ||
+                       categories.find((c) => c.id === activeCategory)?.name || "সব সাইট")
+                    : "সব সাইট"}
+              </h2>
               <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                 {filteredLinks.length.toLocaleString("bn-BD")} টি
               </span>
-              {activeCategory !== "all" && (
+              {(activeCountry !== "all" || activeCategory !== "all") && (
                 <button
-                  onClick={() => setActiveCategory("all")}
+                  onClick={() => { setActiveCountry("all"); setActiveCategory("all"); }}
                   className="ml-auto font-meta text-primary hover:underline"
                 >
                   ← সব দেখুন
                 </button>
               )}
             </div>
+
             {filteredLinks.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}

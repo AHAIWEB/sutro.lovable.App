@@ -19,9 +19,11 @@ import {
   useAddCategory, useUpdateCategory, useDeleteCategory,
 } from "@/hooks/useAdmin";
 import {
-  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen,
+  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen, Star, Search as SearchIcon,
 } from "lucide-react";
 import BulkImportDialog from "@/components/BulkImportDialog";
+import ScraperPanel from "@/components/ScraperPanel";
+import FeaturedPostsAdmin from "@/components/FeaturedPostsAdmin";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -147,8 +149,8 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
-            <TabsTrigger value="pending" className="gap-1">
+          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+            <TabsTrigger value="pending" className="gap-1 text-xs">
               পেন্ডিং
               {pendingLinks.length > 0 && (
                 <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0">
@@ -156,11 +158,17 @@ const Admin = () => {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="links">
+            <TabsTrigger value="links" className="text-xs">
               <Link2 className="w-3.5 h-3.5 mr-1" /> লিংক
             </TabsTrigger>
-            <TabsTrigger value="categories">
+            <TabsTrigger value="categories" className="text-xs">
               <FolderOpen className="w-3.5 h-3.5 mr-1" /> ক্যাটাগরি
+            </TabsTrigger>
+            <TabsTrigger value="scraper" className="text-xs">
+              <SearchIcon className="w-3.5 h-3.5 mr-1" /> স্ক্র্যাপার
+            </TabsTrigger>
+            <TabsTrigger value="featured" className="text-xs">
+              <Star className="w-3.5 h-3.5 mr-1" /> ফিচার
             </TabsTrigger>
           </TabsList>
 
@@ -221,6 +229,16 @@ const Admin = () => {
                 onDelete={deleteCategory}
               />
             ))}
+          </TabsContent>
+
+          {/* SCRAPER */}
+          <TabsContent value="scraper">
+            <ScraperPanel />
+          </TabsContent>
+
+          {/* FEATURED POSTS */}
+          <TabsContent value="featured">
+            <FeaturedPostsAdmin />
           </TabsContent>
         </Tabs>
       </main>
