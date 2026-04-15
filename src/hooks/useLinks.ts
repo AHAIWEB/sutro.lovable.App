@@ -6,6 +6,8 @@ export interface LinkRow {
   title: string;
   url: string;
   category_id: string;
+  country_id: string | null;
+  sub_category_id: string | null;
   favicon: string | null;
   visits: number;
   status: string;
