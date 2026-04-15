@@ -124,34 +124,8 @@ const Index = () => {
                   />
                 ))}
               </div>
-            ))}
-              .map((cat) => {
-                const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
-                return (
-                  <section key={cat.id} className="border border-border rounded-xl overflow-hidden bg-card">
-                    <button
-                      onClick={() => { setActiveCountry("all"); setActiveCategory(cat.id); }}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cat.icon}</span>
-                        <h3 className="font-display text-base text-foreground">{cat.name}</h3>
-                        <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {catLinks.length.toLocaleString("bn-BD")} টি
-                        </span>
-                      </div>
-                      <span className="font-meta text-primary">সব দেখুন →</span>
-                    </button>
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
-                        {catLinks.slice(0, 16).map((link, i) => (
-                          <LinkCard key={link.id} link={link} index={i} />
-                        ))}
-                      </div>
-                    </div>
-                  </section>
-                );
-              })}
+
+
           </div>
         ) : (
           <>
