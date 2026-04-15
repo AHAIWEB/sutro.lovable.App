@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CategoryRow } from "@/hooks/useLinks";
 import type { CountryRow, SubCategoryRow } from "@/hooks/useCountries";
+import { CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 
 interface CountryDropdownNavProps {
   countries: CountryRow[];
@@ -59,51 +60,38 @@ const CountryDropdownNav = ({
           সব ({totalLinks.toLocaleString("bn-BD")})
         </button>
 
-        {/* Country buttons with dropdowns */}
-        {countries.filter(c => (countryLinkCounts[c.id] ?? 0) > 0).map((country) => {
-          const isOpen = openDropdown === `country-${country.id}`;
-          const isActive = activeCountry === country.id;
-          const count = countryLinkCounts[country.id] ?? 0;
-
+        {/* Country buttons grouped by continent */}
+        {CONTINENT_ORDER.map((cont) => {
+          const contCountries = countries.filter(c => (c as any).continent === cont && (countryLinkCounts[c.id] ?? 0) > 0);
+          if (contCountries.length === 0) return null;
+          const contIsOpen = openDropdown === `continent-${cont}`;
           return (
-            <div key={country.id} className="relative">
+            <div key={cont} className="relative">
               <button
-                onClick={() => {
-                  onSelectCountry(country.id);
-                  onSelectCategory("all");
-                  setOpenDropdown(null);
-                }}
-                onContextMenu={(e) => { e.preventDefault(); setOpenDropdown(isOpen ? null : `country-${country.id}`); }}
-                className={cn(
-                  "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
+                onClick={() => setOpenDropdown(contIsOpen ? null : `continent-${cont}`)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                <span>{country.flag}</span>
-                <span className="hidden sm:inline">{country.name}</span>
-                <span className="text-[10px] opacity-70">{count.toLocaleString("bn-BD")}</span>
-                <ChevronDown
-                  className="w-3 h-3 cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(isOpen ? null : `country-${country.id}`); }}
-                />
+                <span className="truncate">{CONTINENT_LABELS[cont]?.split(' ')[0] || '🌐'}</span>
+                <span className="hidden sm:inline truncate">{CONTINENT_LABELS[cont]?.split(' ').slice(1).join(' ') || cont}</span>
+                <span className="text-[10px] opacity-70">
+                  {contCountries.reduce((s, c) => s + (countryLinkCounts[c.id] ?? 0), 0).toLocaleString("bn-BD")}
+                </span>
+                <ChevronDown className="w-3 h-3" />
               </button>
-
-              {isOpen && (
-                <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-xl shadow-lg min-w-[200px] max-h-[300px] overflow-y-auto py-1">
-                  {subCategories.map((sc) => (
+              {contIsOpen && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-xl shadow-lg min-w-[220px] max-h-[350px] overflow-y-auto py-1">
+                  {contCountries.map((country) => (
                     <button
-                      key={sc.id}
-                      onClick={() => {
-                        onSelectCountry(country.id);
-                        onSelectCategory(sc.id);
-                        setOpenDropdown(null);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
+                      key={country.id}
+                      onClick={() => { onSelectCountry(country.id); onSelectCategory("all"); setOpenDropdown(null); }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors",
+                        activeCountry === country.id && "bg-primary/10 text-primary font-semibold"
+                      )}
                     >
-                      <span>{sc.icon}</span>
-                      <span className="flex-1 truncate">{sc.name}</span>
+                      <span>{country.flag}</span>
+                      <span className="flex-1 truncate">{country.name}</span>
+                      <span className="text-[10px] text-muted-foreground">{(countryLinkCounts[country.id] ?? 0).toLocaleString("bn-BD")}</span>
                     </button>
                   ))}
                 </div>

@@ -8,7 +8,20 @@ export interface CountryRow {
   code: string;
   flag: string;
   sort_order: number;
+  continent: string;
 }
+
+export const CONTINENT_LABELS: Record<string, string> = {
+  "asia": "🌏 এশিয়া",
+  "europe": "🌍 ইউরোপ",
+  "americas": "🌎 আমেরিকা",
+  "africa": "🌍 আফ্রিকা",
+  "middle-east": "🕌 মধ্যপ্রাচ্য",
+  "oceania": "🌊 ওশেনিয়া",
+  "other": "🌐 অন্যান্য",
+};
+
+export const CONTINENT_ORDER = ["asia", "middle-east", "europe", "americas", "africa", "oceania", "other"];
 
 export interface SubCategoryRow {
   id: string;

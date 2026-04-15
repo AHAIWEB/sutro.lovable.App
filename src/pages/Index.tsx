@@ -7,7 +7,7 @@ import CountrySection from "@/components/CountrySection";
 import FeaturedSlider from "@/components/FeaturedSlider";
 import LinkCard from "@/components/LinkCard";
 import { useCategories, useLinks } from "@/hooks/useLinks";
-import { useCountries, useSubCategories } from "@/hooks/useCountries";
+import { useCountries, useSubCategories, CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
@@ -59,10 +59,16 @@ const Index = () => {
   }, [links, activeCountry, activeCategory, searchQuery, subCategories]);
 
   // Countries that have links with country_id set
-  const activeCountries = useMemo(
-    () => countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0),
-    [countries, countryLinkCounts]
-  );
+  const countriesByContinent = useMemo(() => {
+    const active = countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0);
+    const grouped: Record<string, typeof active> = {};
+    active.forEach((c) => {
+      const cont = c.continent || "other";
+      if (!grouped[cont]) grouped[cont] = [];
+      grouped[cont].push(c);
+    });
+    return grouped;
+  }, [countries, countryLinkCounts]);
 
   const isLoading = linksLoading || catsLoading || countriesLoading;
 
@@ -105,50 +111,20 @@ const Index = () => {
         ) : showCountryView ? (
           <div className="space-y-6">
             {/* Country sections with logo grid */}
-            {activeCountries.map((country) => (
-              <CountrySection
-                key={country.id}
-                country={country}
-                links={links}
-                categories={categories}
-                subCategories={subCategories}
-              />
+            {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => (
+              <div key={cont} className="space-y-3">
+                <h2 className="font-display text-lg text-foreground px-1">{CONTINENT_LABELS[cont] || cont}</h2>
+                {countriesByContinent[cont].map((country) => (
+                  <CountrySection
+                    key={country.id}
+                    country={country}
+                    links={links}
+                    categories={categories}
+                    subCategories={subCategories}
+                  />
+                ))}
+              </div>
             ))}
-
-            {/* Uncategorized links (no country) grouped by A-Z */}
-            {categories
-              .filter((cat) => /^letter-[a-z]$/.test(cat.id))
-              .filter((cat) => {
-                const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
-                return catLinks.length > 0;
-              })
-              .map((cat) => {
-                const catLinks = links.filter((l) => l.category_id === cat.id && !l.country_id);
-                return (
-                  <section key={cat.id} className="border border-border rounded-xl overflow-hidden bg-card">
-                    <button
-                      onClick={() => { setActiveCountry("all"); setActiveCategory(cat.id); }}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cat.icon}</span>
-                        <h3 className="font-display text-base text-foreground">{cat.name}</h3>
-                        <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {catLinks.length.toLocaleString("bn-BD")} টি
-                        </span>
-                      </div>
-                      <span className="font-meta text-primary">সব দেখুন →</span>
-                    </button>
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
-                        {catLinks.slice(0, 16).map((link, i) => (
-                          <LinkCard key={link.id} link={link} index={i} />
-                        ))}
-                      </div>
-                    </div>
-                  </section>
-                );
-              })}
           </div>
         ) : (
           <>

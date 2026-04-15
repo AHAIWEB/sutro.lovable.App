@@ -44,6 +44,7 @@ export type Database = {
       countries: {
         Row: {
           code: string
+          continent: string
           created_at: string
           flag: string
           id: string
@@ -53,6 +54,7 @@ export type Database = {
         }
         Insert: {
           code: string
+          continent?: string
           created_at?: string
           flag?: string
           id: string
@@ -62,6 +64,7 @@ export type Database = {
         }
         Update: {
           code?: string
+          continent?: string
           created_at?: string
           flag?: string
           id?: string

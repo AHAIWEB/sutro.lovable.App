@@ -1,0 +1,1 @@
+ALTER TABLE countries ADD COLUMN continent text NOT NULL DEFAULT 'other';
