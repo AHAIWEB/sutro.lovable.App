@@ -15,14 +15,14 @@ const LetterNav = ({ categories, activeCategory, onSelect, linkCounts, totalLink
   const [openLetter, setOpenLetter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Separate letter categories (single char name like A, B, C) from other categories
-  const letterCategories = categories.filter((c) => /^[A-Z]$/.test(c.name));
-  const otherCategories = categories.filter((c) => !/^[A-Z]$/.test(c.name));
+  // Separate letter categories (id like "letter-a") from other categories
+  const letterCategories = categories.filter((c) => /^letter-[a-z]$/.test(c.id));
+  const otherCategories = categories.filter((c) => !/^letter-[a-z]$/.test(c.id));
 
-  // Group non-letter categories by first letter
+  // Group non-letter categories by first letter of name_en
   const otherByLetter: Record<string, CategoryRow[]> = {};
   otherCategories.forEach((cat) => {
-    const letter = cat.name.charAt(0).toUpperCase();
+    const letter = (cat.name_en || cat.name).charAt(0).toUpperCase();
     if (!otherByLetter[letter]) otherByLetter[letter] = [];
     otherByLetter[letter].push(cat);
   });
