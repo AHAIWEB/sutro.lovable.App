@@ -281,11 +281,10 @@ serve(async (req) => {
       if (articles.length < 3) {
         for (const link of navLinks) {
           if (link.title.length < 10 && articles.length > 5) continue;
-          const surroundingHtml = text.substring(Math.max(0, link.index - 500), link.index + link.title.length + 500);
-          const imgMatch = surroundingHtml.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i);
-          let image = imgMatch ? imgMatch[1] : null;
-          if (image && !image.startsWith("http")) {
-            try { image = new URL(image, url).href; } catch { image = null; }
+          let image = extractImage(link.innerHtml, url);
+          if (!image) {
+            const surroundingHtml = text.substring(Math.max(0, link.index - 800), link.index + link.innerHtml.length + 800);
+            image = extractImage(surroundingHtml, url);
           }
           articles.push({ title: link.title, url: link.href, image, description: null, source: siteName });
         }
