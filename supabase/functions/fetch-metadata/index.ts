@@ -225,21 +225,53 @@ serve(async (req) => {
       const articleLinks = allLinks.filter(l => l.isArticle);
       const navLinks = allLinks.filter(l => !l.isArticle);
 
+      // Helper: extract image from HTML chunk
+      function extractImage(html: string, baseHref: string): string | null {
+        // 1. Check for img tags with various src attributes (data-src, data-lazy-src, data-original, data-srcset)
+        const imgPatterns = [
+          /<img[^>]+(?:data-src|data-lazy-src|data-original)=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)[^"']*)["']/i,
+          /<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)[^"']*)["']/i,
+          /<img[^>]+(?:data-src|data-lazy-src|data-original)=["']([^"']+)["']/i,
+          /<img[^>]+src=["']([^"']+)["']/i,
+        ];
+        for (const pat of imgPatterns) {
+          const m = html.match(pat);
+          if (m && m[1]) {
+            let img = m[1];
+            if (!img.startsWith("http")) {
+              try { img = new URL(img, baseHref).href; } catch { continue; }
+            }
+            if (/1x1|pixel|spacer|blank|\.svg|data:image/i.test(img)) continue;
+            if (/logo|icon|favicon|avatar|badge|button/i.test(img) && img.length < 80) continue;
+            return img;
+          }
+        }
+        // 2. Check background-image in style
+        const bgMatch = html.match(/background-image:\s*url\(['"]?([^'")\s]+)['"]?\)/i);
+        if (bgMatch && bgMatch[1]) {
+          let img = bgMatch[1];
+          if (!img.startsWith("http")) {
+            try { img = new URL(img, baseHref).href; } catch { return null; }
+          }
+          if (!/1x1|pixel|spacer|blank|\.svg/i.test(img)) return img;
+        }
+        return null;
+      }
+
       // Process article links first (these are actual posts)
       for (const link of articleLinks) {
-        // Search for nearby image in surrounding HTML (1000 chars around)
-        const surroundingHtml = text.substring(Math.max(0, link.index - 800), link.index + link.title.length + 800);
-        const imgMatch = surroundingHtml.match(/<img[^>]+(?:src|data-src|data-lazy-src|data-original)=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)[^"']*)["']/i)
-          || surroundingHtml.match(/<img[^>]+(?:src|data-src|data-lazy-src)=["']([^"']+)["']/i);
-        let image = imgMatch ? imgMatch[1] : null;
-        if (image && !image.startsWith("http")) {
-          try { image = new URL(image, url).href; } catch { image = null; }
+        // First check inside the <a> tag itself (innerHtml)
+        let image = extractImage(link.innerHtml, url);
+        
+        // If no image inside the link, search surrounding HTML (wider range)
+        if (!image) {
+          const surroundingHtml = text.substring(Math.max(0, link.index - 1200), link.index + link.innerHtml.length + 1200);
+          image = extractImage(surroundingHtml, url);
         }
-        // Skip tiny icons/tracking pixels
-        if (image && /1x1|pixel|spacer|blank|logo|icon|favicon/i.test(image)) image = null;
 
         // Extract description from nearby <p> tags
-        const descMatch = surroundingHtml.match(/<p[^>]*>([\s\S]{20,}?)<\/p>/i);
+        const surroundingForDesc = text.substring(Math.max(0, link.index - 500), link.index + link.innerHtml.length + 800);
+        const descMatch = surroundingForDesc.match(/<p[^>]*>([\s\S]{20,}?)<\/p>/i);
         const description = descMatch ? descMatch[1].replace(/<[^>]*>/g, "").trim().slice(0, 200) : null;
 
         articles.push({ title: link.title, url: link.href, image, description, source: siteName });
