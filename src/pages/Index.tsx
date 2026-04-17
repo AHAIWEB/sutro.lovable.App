@@ -6,6 +6,8 @@ import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
 import FeaturedSlider from "@/components/FeaturedSlider";
 import LinkCard from "@/components/LinkCard";
+import AllCategoriesGrid from "@/components/AllCategoriesGrid";
+import CategoryNavMenu from "@/components/CategoryNavMenu";
 import { useCategories, useLinks } from "@/hooks/useLinks";
 import { useCountries, useSubCategories, CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,6 +72,8 @@ const Index = () => {
     return grouped;
   }, [countries, countryLinkCounts]);
 
+  const bdCountry = useMemo(() => countries.find((c) => c.id === "bd"), [countries]);
+
   const isLoading = linksLoading || catsLoading || countriesLoading;
 
   const showCountryView = activeCountry === "all" && activeCategory === "all" && !searchQuery.trim();
@@ -87,18 +91,29 @@ const Index = () => {
       <FeaturedSlider />
 
       {!isLoading && (
-        <CountryDropdownNav
-          countries={countries}
-          categories={categories}
-          subCategories={subCategories}
-          activeCountry={activeCountry}
-          activeCategory={activeCategory}
-          onSelectCountry={setActiveCountry}
-          onSelectCategory={setActiveCategory}
-          linkCounts={linkCounts}
-          countryLinkCounts={countryLinkCounts}
-          totalLinks={links.length}
-        />
+        <>
+          <div className="px-4 sm:px-6 lg:px-8 py-2 bg-card/40 border-b border-border overflow-x-auto">
+            <CategoryNavMenu
+              categories={categories}
+              subCategories={subCategories}
+              activeCategory={activeCategory}
+              onSelect={(id) => { setActiveCategory(id); setActiveCountry("all"); }}
+              linkCounts={linkCounts}
+            />
+          </div>
+          <CountryDropdownNav
+            countries={countries}
+            categories={categories}
+            subCategories={subCategories}
+            activeCountry={activeCountry}
+            activeCategory={activeCategory}
+            onSelectCountry={setActiveCountry}
+            onSelectCategory={setActiveCategory}
+            linkCounts={linkCounts}
+            countryLinkCounts={countryLinkCounts}
+            totalLinks={links.length}
+          />
+        </>
       )}
 
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
@@ -109,22 +124,52 @@ const Index = () => {
             ))}
           </div>
         ) : showCountryView ? (
-          <div className="space-y-6">
-            {/* Country sections with logo grid */}
-            {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => (
-              <div key={cont} className="space-y-3">
-                <h2 className="font-display text-lg text-foreground px-1">{CONTINENT_LABELS[cont] || cont}</h2>
-                {countriesByContinent[cont].map((country) => (
-                  <CountrySection
-                    key={country.id}
-                    country={country}
-                    links={links}
-                    categories={categories}
-                    subCategories={subCategories}
-                  />
-                ))}
+          <div className="space-y-8">
+            {/* Bangladesh always pinned at the top */}
+            {bdCountry && (countryLinkCounts[bdCountry.id] ?? 0) > 0 && (
+              <div className="space-y-3">
+                <h2 className="font-display text-lg text-foreground px-1 flex items-center gap-2">
+                  <span className="text-xl">{bdCountry.flag}</span>
+                  <span>বাংলাদেশ</span>
+                  <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {(countryLinkCounts[bdCountry.id] ?? 0).toLocaleString("bn-BD")} টি
+                  </span>
+                </h2>
+                <CountrySection
+                  country={bdCountry}
+                  links={links}
+                  categories={categories}
+                  subCategories={subCategories}
+                />
               </div>
-            ))}
+            )}
+
+            {/* All categories grid (for everything that isn't a newspaper letter cat) */}
+            <AllCategoriesGrid
+              categories={categories}
+              linkCounts={linkCounts}
+              onSelect={(id) => { setActiveCategory(id); setActiveCountry("all"); }}
+            />
+
+            {/* Other countries grouped by continent (BD excluded) */}
+            {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => {
+              const list = countriesByContinent[cont].filter((c) => c.id !== "bd");
+              if (list.length === 0) return null;
+              return (
+                <div key={cont} className="space-y-3">
+                  <h2 className="font-display text-lg text-foreground px-1">{CONTINENT_LABELS[cont] || cont}</h2>
+                  {list.map((country) => (
+                    <CountrySection
+                      key={country.id}
+                      country={country}
+                      links={links}
+                      categories={categories}
+                      subCategories={subCategories}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <>
