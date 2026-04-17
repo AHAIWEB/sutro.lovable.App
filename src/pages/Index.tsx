@@ -6,6 +6,8 @@ import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
 import FeaturedSlider from "@/components/FeaturedSlider";
 import LinkCard from "@/components/LinkCard";
+import AllCategoriesGrid from "@/components/AllCategoriesGrid";
+import CategoryNavMenu from "@/components/CategoryNavMenu";
 import { useCategories, useLinks } from "@/hooks/useLinks";
 import { useCountries, useSubCategories, CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,18 +89,29 @@ const Index = () => {
       <FeaturedSlider />
 
       {!isLoading && (
-        <CountryDropdownNav
-          countries={countries}
-          categories={categories}
-          subCategories={subCategories}
-          activeCountry={activeCountry}
-          activeCategory={activeCategory}
-          onSelectCountry={setActiveCountry}
-          onSelectCategory={setActiveCategory}
-          linkCounts={linkCounts}
-          countryLinkCounts={countryLinkCounts}
-          totalLinks={links.length}
-        />
+        <>
+          <div className="px-4 sm:px-6 lg:px-8 py-2 bg-card/40 border-b border-border overflow-x-auto">
+            <CategoryNavMenu
+              categories={categories}
+              subCategories={subCategories}
+              activeCategory={activeCategory}
+              onSelect={(id) => { setActiveCategory(id); setActiveCountry("all"); }}
+              linkCounts={linkCounts}
+            />
+          </div>
+          <CountryDropdownNav
+            countries={countries}
+            categories={categories}
+            subCategories={subCategories}
+            activeCountry={activeCountry}
+            activeCategory={activeCategory}
+            onSelectCountry={setActiveCountry}
+            onSelectCategory={setActiveCategory}
+            linkCounts={linkCounts}
+            countryLinkCounts={countryLinkCounts}
+            totalLinks={links.length}
+          />
+        </>
       )}
 
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
