@@ -52,20 +52,28 @@ const FeaturedSlider = () => {
                   const domain = (() => {
                     try { return new URL(post.url).hostname; } catch { return ""; }
                   })();
-                  const fallback = domain
-                    ? `https://www.google.com/s2/favicons?sz=128&domain=${domain}`
-                    : "/placeholder.svg";
-                  const src = post.image_url || fallback;
+                  const faviconLg = domain ? `https://www.google.com/s2/favicons?sz=256&domain=${domain}` : "/placeholder.svg";
+                  const screenshot = domain ? `https://image.thum.io/get/width/400/crop/300/${post.url}` : "";
+                  // Try: post image > screenshot service > favicon > placeholder
+                  const initialSrc = post.image_url || screenshot || faviconLg;
                   return (
                     <img
-                      src={src}
+                      src={initialSrc}
                       alt={post.title}
                       loading="lazy"
+                      data-fallback-stage="0"
                       onError={(e) => {
                         const img = e.currentTarget;
-                        if (img.src !== fallback) img.src = fallback;
+                        const stage = parseInt(img.dataset.fallbackStage || "0");
+                        if (stage === 0 && screenshot && img.src !== screenshot) {
+                          img.dataset.fallbackStage = "1"; img.src = screenshot;
+                        } else if (stage <= 1 && img.src !== faviconLg) {
+                          img.dataset.fallbackStage = "2"; img.src = faviconLg;
+                        } else if (img.src !== window.location.origin + "/placeholder.svg") {
+                          img.dataset.fallbackStage = "3"; img.src = "/placeholder.svg";
+                        }
                       }}
-                      className="w-16 h-12 rounded-lg object-cover flex-shrink-0 bg-muted"
+                      className="w-20 h-16 rounded-lg object-cover flex-shrink-0 bg-muted ring-1 ring-border"
                     />
                   );
                 })()}
