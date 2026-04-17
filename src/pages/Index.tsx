@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import NewsTicker from "@/components/NewsTicker";
 import SutraHeader from "@/components/SutraHeader";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
 import FeaturedSlider from "@/components/FeaturedSlider";
@@ -21,6 +22,7 @@ const Index = () => {
   const { data: links = [], isLoading: linksLoading } = useLinks();
   const { data: countries = [], isLoading: countriesLoading } = useCountries();
   const { data: subCategories = [] } = useSubCategories();
+  const { data: settings } = useSiteSettings();
 
   const linkCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -216,10 +218,27 @@ const Index = () => {
         )}
       </main>
 
-      <footer className="border-t border-border py-4 text-center">
-        <p className="text-xs text-muted-foreground">
-          সূত্র — সব প্রয়োজনীয় লিংক, এক সূত্রে।
-        </p>
+      <footer className="border-t border-border py-6 mt-4 bg-gradient-to-b from-transparent to-card/40">
+        <div className="container space-y-3 text-center">
+          {settings?.footer_links && settings.footer_links.length > 0 && (
+            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              {settings.footer_links.filter((l) => l.label && l.url).map((l, i) => (
+                <a
+                  key={i}
+                  href={l.url}
+                  target={l.url.startsWith("http") ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {settings?.footer_text || "সূত্র — সব প্রয়োজনীয় লিংক, এক সূত্রে।"}
+          </p>
+        </div>
       </footer>
     </div>
   );

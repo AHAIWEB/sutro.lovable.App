@@ -19,11 +19,12 @@ import {
   useAddCategory, useUpdateCategory, useDeleteCategory,
 } from "@/hooks/useAdmin";
 import {
-  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen, Star, Search as SearchIcon,
+  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen, Star, Search as SearchIcon, Settings,
 } from "lucide-react";
 import BulkImportDialog from "@/components/BulkImportDialog";
 import ScraperPanel from "@/components/ScraperPanel";
 import FeaturedPostsAdmin from "@/components/FeaturedPostsAdmin";
+import SiteSettingsPanel from "@/components/SiteSettingsPanel";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -149,7 +150,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-3xl">
             <TabsTrigger value="pending" className="gap-1 text-xs">
               পেন্ডিং
               {pendingLinks.length > 0 && (
@@ -169,6 +170,9 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="featured" className="text-xs">
               <Star className="w-3.5 h-3.5 mr-1" /> ফিচার
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">
+              <Settings className="w-3.5 h-3.5 mr-1" /> সেটিংস
             </TabsTrigger>
           </TabsList>
 
@@ -239,6 +243,11 @@ const Admin = () => {
           {/* FEATURED POSTS */}
           <TabsContent value="featured">
             <FeaturedPostsAdmin />
+          </TabsContent>
+
+          {/* SITE SETTINGS */}
+          <TabsContent value="settings">
+            <SiteSettingsPanel />
           </TabsContent>
         </Tabs>
       </main>
