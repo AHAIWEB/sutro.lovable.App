@@ -122,22 +122,52 @@ const Index = () => {
             ))}
           </div>
         ) : showCountryView ? (
-          <div className="space-y-6">
-            {/* Country sections with logo grid */}
-            {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => (
-              <div key={cont} className="space-y-3">
-                <h2 className="font-display text-lg text-foreground px-1">{CONTINENT_LABELS[cont] || cont}</h2>
-                {countriesByContinent[cont].map((country) => (
-                  <CountrySection
-                    key={country.id}
-                    country={country}
-                    links={links}
-                    categories={categories}
-                    subCategories={subCategories}
-                  />
-                ))}
+          <div className="space-y-8">
+            {/* Bangladesh always pinned at the top */}
+            {bdCountry && (countryLinkCounts[bdCountry.id] ?? 0) > 0 && (
+              <div className="space-y-3">
+                <h2 className="font-display text-lg text-foreground px-1 flex items-center gap-2">
+                  <span className="text-xl">{bdCountry.flag}</span>
+                  <span>বাংলাদেশ</span>
+                  <span className="font-meta text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {(countryLinkCounts[bdCountry.id] ?? 0).toLocaleString("bn-BD")} টি
+                  </span>
+                </h2>
+                <CountrySection
+                  country={bdCountry}
+                  links={links}
+                  categories={categories}
+                  subCategories={subCategories}
+                />
               </div>
-            ))}
+            )}
+
+            {/* All categories grid (for everything that isn't a newspaper letter cat) */}
+            <AllCategoriesGrid
+              categories={categories}
+              linkCounts={linkCounts}
+              onSelect={(id) => { setActiveCategory(id); setActiveCountry("all"); }}
+            />
+
+            {/* Other countries grouped by continent (BD excluded) */}
+            {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => {
+              const list = countriesByContinent[cont].filter((c) => c.id !== "bd");
+              if (list.length === 0) return null;
+              return (
+                <div key={cont} className="space-y-3">
+                  <h2 className="font-display text-lg text-foreground px-1">{CONTINENT_LABELS[cont] || cont}</h2>
+                  {list.map((country) => (
+                    <CountrySection
+                      key={country.id}
+                      country={country}
+                      links={links}
+                      categories={categories}
+                      subCategories={subCategories}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <>
