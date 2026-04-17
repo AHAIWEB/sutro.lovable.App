@@ -1,1 +1,10 @@
 project_id = "bqanayrogqfcgvkhhpjq"
+
+[functions.refresh-featured-posts]
+verify_jwt = false
+
+[functions.fetch-metadata]
+verify_jwt = false
+
+[functions.scrape-links]
+verify_jwt = false
