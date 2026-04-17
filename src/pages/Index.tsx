@@ -72,6 +72,8 @@ const Index = () => {
     return grouped;
   }, [countries, countryLinkCounts]);
 
+  const bdCountry = useMemo(() => countries.find((c) => c.id === "bd"), [countries]);
+
   const isLoading = linksLoading || catsLoading || countriesLoading;
 
   const showCountryView = activeCountry === "all" && activeCategory === "all" && !searchQuery.trim();
