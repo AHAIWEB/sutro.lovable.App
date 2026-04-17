@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import AddLinkDialog from "./AddLinkDialog";
 import type { CategoryRow } from "@/hooks/useLinks";
 import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 interface SutraHeaderProps {
   categories: CategoryRow[];
@@ -17,6 +18,7 @@ interface SutraHeaderProps {
 const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: SutraHeaderProps) => {
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const { data: settings } = useSiteSettings();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
@@ -29,17 +31,29 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
     setUser(null);
   };
 
+  const siteName = settings?.site_name || "সূত্র";
+  const tagline = settings?.site_tagline;
+  const logoUrl = settings?.logo_url;
+  const logoEmoji = settings?.logo_emoji;
+  const headerMenu = settings?.header_menu || [];
+
   return (
     <header className="border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-30">
       <div className="container flex items-center justify-between py-3 gap-4">
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <Globe className="w-5 h-5 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center overflow-hidden shadow-md shadow-primary/20">
+            {logoUrl ? (
+              <img src={logoUrl} alt={siteName} className="w-full h-full object-cover" />
+            ) : logoEmoji ? (
+              <span className="text-lg">{logoEmoji}</span>
+            ) : (
+              <Globe className="w-5 h-5 text-primary-foreground" />
+            )}
           </div>
           <div>
-            <h1 className="font-display text-xl text-foreground leading-none">সূত্র</h1>
+            <h1 className="font-display text-xl text-foreground leading-none">{siteName}</h1>
             <span className="font-meta text-muted-foreground hidden sm:block">
-              {totalLinks.toLocaleString("bn-BD")} টি সাইট
+              {tagline || `${totalLinks.toLocaleString("bn-BD")} টি সাইট`}
             </span>
           </div>
         </div>
@@ -55,6 +69,21 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
         </div>
 
         <div className="flex items-center gap-2">
+          {headerMenu.length > 0 && (
+            <nav className="hidden md:flex items-center gap-1 mr-2">
+              {headerMenu.filter((m) => m.label && m.url).slice(0, 4).map((m, i) => (
+                <a
+                  key={i}
+                  href={m.url}
+                  target={m.url.startsWith("http") ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-primary px-2 py-1 rounded-md hover:bg-muted transition-colors"
+                >
+                  {m.label}
+                </a>
+              ))}
+            </nav>
+          )}
           <AddLinkDialog categories={categories} />
           {user ? (
             <>
