@@ -72,8 +72,8 @@ const SiteSettingsPanel = () => {
 
       {/* Theme colors */}
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Palette className="w-4 h-4" /> থিম কালার</CardTitle></CardHeader>
-        <CardContent>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Palette className="w-4 h-4" /> থিম কালার (লাইভ প্রিভিউ)</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">প্রাইমারি কালার</Label>
@@ -90,6 +90,14 @@ const SiteSettingsPanel = () => {
               </div>
             </div>
           </div>
+          <div className="flex items-center gap-3 pt-2 border-t border-border">
+            <div className="flex-1 grid grid-cols-2 gap-2">
+              <div className="h-10 rounded-md flex items-center justify-center text-white text-xs font-medium" style={{ backgroundColor: draft.primary_color }}>প্রাইমারি</div>
+              <div className="h-10 rounded-md flex items-center justify-center text-white text-xs font-medium" style={{ backgroundColor: draft.accent_color }}>অ্যাকসেন্ট</div>
+            </div>
+            <Button size="sm" onClick={async () => { await saveOne("primary_color"); await saveOne("accent_color"); }}>সেভ ও প্রয়োগ</Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">সেভ করার পর সম্পূর্ণ সাইটের থিম রিয়েল-টাইম আপডেট হবে।</p>
         </CardContent>
       </Card>
 
