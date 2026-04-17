@@ -48,13 +48,27 @@ const FeaturedSlider = () => {
                 rel="noopener noreferrer"
                 className="group flex items-start gap-3"
               >
-                {post.image_url && (
-                  <img
-                    src={post.image_url}
-                    alt=""
-                    className="w-16 h-12 rounded-lg object-cover flex-shrink-0"
-                  />
-                )}
+                {(() => {
+                  const domain = (() => {
+                    try { return new URL(post.url).hostname; } catch { return ""; }
+                  })();
+                  const fallback = domain
+                    ? `https://www.google.com/s2/favicons?sz=128&domain=${domain}`
+                    : "/placeholder.svg";
+                  const src = post.image_url || fallback;
+                  return (
+                    <img
+                      src={src}
+                      alt={post.title}
+                      loading="lazy"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (img.src !== fallback) img.src = fallback;
+                      }}
+                      className="w-16 h-12 rounded-lg object-cover flex-shrink-0 bg-muted"
+                    />
+                  );
+                })()}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-display text-base text-foreground group-hover:text-primary transition-colors line-clamp-2">
                     {post.title}
