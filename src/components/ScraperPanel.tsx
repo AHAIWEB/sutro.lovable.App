@@ -208,8 +208,77 @@ const ScraperPanel = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Save as auto-run config */}
+          <div className="pt-3 border-t border-border space-y-2">
+            <div className="flex items-center gap-3 text-xs flex-wrap">
+              <Label className="flex items-center gap-1.5 cursor-pointer">
+                <Switch checked={autoRun} onCheckedChange={setAutoRun} />
+                <Clock className="w-3 h-3" /> অটো-রান (লগইন ছাড়াই)
+              </Label>
+              {autoRun && (
+                <Select value={String(intervalHours)} onValueChange={(v) => setIntervalHours(parseInt(v))}>
+                  <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">প্রতি ১ ঘন্টা</SelectItem>
+                    <SelectItem value="6">প্রতি ৬ ঘন্টা</SelectItem>
+                    <SelectItem value="12">প্রতি ১২ ঘন্টা</SelectItem>
+                    <SelectItem value="24">প্রতি ২৪ ঘন্টা</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={configName}
+                onChange={(e) => setConfigName(e.target.value)}
+                placeholder="কনফিগের নাম (যেমন: Prothom Alo)"
+                className="text-xs"
+              />
+              <Button onClick={handleSaveConfig} disabled={savingCfg} size="sm" variant="outline">
+                {savingCfg ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                সেভ
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {savedConfigs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4" /> সংরক্ষিত কনফিগ ({savedConfigs.length.toLocaleString("bn-BD")})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {savedConfigs.map((cfg) => (
+              <div key={cfg.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-sm">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{cfg.name}</div>
+                  <div className="text-[10px] text-muted-foreground truncate font-mono">{cfg.source_url}</div>
+                  {cfg.last_run_at && (
+                    <div className="text-[10px] text-muted-foreground">শেষ রান: {new Date(cfg.last_run_at).toLocaleString("bn-BD")}</div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Switch
+                    checked={cfg.auto_run}
+                    onCheckedChange={(v) => handleToggleAutoRun(cfg.id, v)}
+                  />
+                  <span className="text-[10px] text-muted-foreground w-10">{cfg.run_interval_hours}ঘ</span>
+                </div>
+                <Button size="icon" variant="ghost" onClick={() => handleRunNow(cfg)} title="এখনই রান">
+                  <Play className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => handleDeleteConfig(cfg.id)}>
+                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {scrapedLinks.length > 0 && (
         <Card>
