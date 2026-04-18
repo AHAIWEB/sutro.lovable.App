@@ -15,6 +15,8 @@ const SiteSettingsPanel = () => {
   const update = useUpdateSiteSetting();
   const { toast } = useToast();
   const [draft, setDraft] = useState<SiteSettingsMap | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (settings && !draft) setDraft(settings);
