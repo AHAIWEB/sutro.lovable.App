@@ -258,14 +258,18 @@ serve(async (req) => {
         return null;
       }
 
+      // Words/patterns that indicate nav/junk links — never include these
+      const NAV_BLACKLIST = /^(login|signup|sign\s*up|register|home|menu|search|subscribe|click\s*here|read\s*more|আরও|আরো|হোম|লগইন|সাইন|নিবন্ধন|সদস্য|আমাদের\s*সম্পর্কে|যোগাযোগ|গোপনীয়তা|শর্তাবলী|বিজ্ঞাপন)$/i;
+
       // Process article links first (these are actual posts)
       for (const link of articleLinks) {
+        if (NAV_BLACKLIST.test(link.title.trim())) continue;
         // First check inside the <a> tag itself (innerHtml)
         let image = extractImage(link.innerHtml, url);
         
         // If no image inside the link, search surrounding HTML (wider range)
         if (!image) {
-          const surroundingHtml = text.substring(Math.max(0, link.index - 1200), link.index + link.innerHtml.length + 1200);
+          const surroundingHtml = text.substring(Math.max(0, link.index - 1500), link.index + link.innerHtml.length + 1500);
           image = extractImage(surroundingHtml, url);
         }
 
@@ -280,6 +284,7 @@ serve(async (req) => {
       // If few articles found, also include nav links as category pages
       if (articles.length < 3) {
         for (const link of navLinks) {
+          if (NAV_BLACKLIST.test(link.title.trim())) continue;
           if (link.title.length < 10 && articles.length > 5) continue;
           let image = extractImage(link.innerHtml, url);
           if (!image) {
@@ -290,9 +295,23 @@ serve(async (req) => {
         }
       }
 
+      // For top items missing an image, fetch the article page in parallel and grab og:image
+      const topItems = articles.slice(0, 20);
+      const needImage = topItems.filter(a => !a.image);
+      await Promise.all(needImage.map(async (a) => {
+        try {
+          const r = await fetchWithRetries(a.url);
+          if (!r.ok) { await r.text().catch(() => {}); return; }
+          const html = await r.text();
+          const meta = extractMeta(html, a.url);
+          if (meta.image) a.image = meta.image;
+          if (!a.description && meta.description) a.description = meta.description;
+        } catch {}
+      }));
+
       return new Response(JSON.stringify({ 
-        items: articles.slice(0, 50), 
-        count: articles.length, 
+        items: topItems, 
+        count: topItems.length, 
         source: siteName,
         article_count: articleLinks.length,
         nav_count: navLinks.length
