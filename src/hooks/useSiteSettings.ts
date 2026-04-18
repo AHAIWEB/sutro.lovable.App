@@ -11,6 +11,7 @@ export interface SiteSettingsMap {
   header_menu: { label: string; url: string }[];
   primary_color: string;
   accent_color: string;
+  featured_count: number;
 }
 
 const DEFAULTS: SiteSettingsMap = {
@@ -23,6 +24,7 @@ const DEFAULTS: SiteSettingsMap = {
   header_menu: [],
   primary_color: "#0d9488",
   accent_color: "#f59e0b",
+  featured_count: 6,
 };
 
 export function useSiteSettings() {
