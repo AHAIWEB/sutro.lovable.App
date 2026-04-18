@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap } from "@/hooks/useSiteSettings";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2 } from "lucide-react";
 
 const SiteSettingsPanel = () => {
   const { data: settings } = useSiteSettings();
@@ -31,10 +33,40 @@ const SiteSettingsPanel = () => {
   const saveAll = async () => {
     const keys: (keyof SiteSettingsMap)[] = [
       "site_name", "site_tagline", "logo_url", "logo_emoji",
-      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color",
+      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count",
     ];
     for (const k of keys) await update.mutateAsync({ key: k, value: draft[k] });
     toast({ title: "সব সেটিংস সেভ হয়েছে ✅" });
+  };
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "ফাইল ২MB এর কম হতে হবে", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("site-assets").getPublicUrl(path);
+      set("logo_url", pub.publicUrl);
+      await update.mutateAsync({ key: "logo_url", value: pub.publicUrl });
+      toast({ title: "লোগো আপলোড হয়েছে ✅" });
+    } catch (err: any) {
+      toast({ title: "আপলোড ব্যর্থ", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   };
 
   return (
