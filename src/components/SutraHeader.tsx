@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Globe, Shield, LogIn, LogOut } from "lucide-react";
+import { Search, Globe, Shield, LogIn, LogOut, Moon, Sun } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import AddLinkDialog from "./AddLinkDialog";
 import type { CategoryRow } from "@/hooks/useLinks";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 interface SutraHeaderProps {
   categories: CategoryRow[];
@@ -19,6 +20,7 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const { data: settings } = useSiteSettings();
+  const { isDark, toggle: toggleDark } = useDarkMode();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
@@ -85,6 +87,16 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
             </nav>
           )}
           <AddLinkDialog categories={categories} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={toggleDark}
+            title={isDark ? "লাইট মোড" : "ডার্ক মোড"}
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
           {user ? (
             <>
               <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => navigate("/admin")}>
