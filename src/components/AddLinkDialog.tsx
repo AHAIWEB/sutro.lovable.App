@@ -49,12 +49,13 @@ const AddLinkDialog = ({ categories }: AddLinkDialogProps) => {
     setFetching(true);
     try {
       const { data, error } = await supabase.functions.invoke("fetch-metadata", {
-        body: { url: url.trim(), mode: "single" },
+        body: { url: url.trim() },
       });
       if (error) throw error;
-      const meta = data?.metadata || (data?.items?.[0]) || data;
-      if (meta?.title) {
-        setTitle(meta.title);
+      // Default mode returns meta { title, image, description, siteName }
+      const t = data?.title || data?.metadata?.title || data?.items?.[0]?.title;
+      if (t) {
+        setTitle(t);
         toast({ title: "তথ্য পেয়েছি ✅", description: "শিরোনাম স্বয়ংক্রিয়ভাবে যোগ করা হলো" });
       } else {
         toast({ title: "তথ্য পাওয়া যায়নি", variant: "destructive" });
