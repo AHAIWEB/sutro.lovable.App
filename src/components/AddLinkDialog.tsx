@@ -16,9 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Send } from "lucide-react";
+import { Plus, Send, Wand2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSubmitLink, type CategoryRow } from "@/hooks/useLinks";
+import { supabase } from "@/integrations/supabase/client";
 
 const linkSchema = z.object({
   url: z.string().trim().url({ message: "সঠিক URL দিন" }).max(500),
@@ -36,8 +37,34 @@ const AddLinkDialog = ({ categories }: AddLinkDialogProps) => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fetching, setFetching] = useState(false);
   const { toast } = useToast();
   const submitLink = useSubmitLink();
+
+  const handleAutoFetch = async () => {
+    if (!url.trim()) {
+      toast({ title: "আগে URL দিন", variant: "destructive" });
+      return;
+    }
+    setFetching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-metadata", {
+        body: { url: url.trim(), mode: "single" },
+      });
+      if (error) throw error;
+      const meta = data?.metadata || (data?.items?.[0]) || data;
+      if (meta?.title) {
+        setTitle(meta.title);
+        toast({ title: "তথ্য পেয়েছি ✅", description: "শিরোনাম স্বয়ংক্রিয়ভাবে যোগ করা হলো" });
+      } else {
+        toast({ title: "তথ্য পাওয়া যায়নি", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "ফেচ ব্যর্থ", description: e.message, variant: "destructive" });
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const result = linkSchema.safeParse({ url, title, category });
