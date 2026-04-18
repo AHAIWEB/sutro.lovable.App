@@ -119,13 +119,26 @@ const AddLinkDialog = ({ categories }: AddLinkDialogProps) => {
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
-            <Input
-              placeholder="https://example.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="font-mono text-sm"
-            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={handleAutoFetch}
+                disabled={fetching || !url.trim()}
+                title="URL থেকে শিরোনাম স্বয়ংক্রিয়ভাবে আনুন"
+              >
+                {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+              </Button>
+            </div>
             {errors.url && <p className="text-xs text-destructive mt-1">{errors.url}</p>}
+            <p className="text-[10px] text-muted-foreground mt-1">✨ বাটনে ক্লিক করে শিরোনাম স্বয়ংক্রিয়ভাবে নিন</p>
           </div>
           <div>
             <Input
