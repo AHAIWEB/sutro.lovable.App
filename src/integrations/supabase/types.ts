@@ -188,11 +188,13 @@ export type Database = {
       }
       scraper_configs: {
         Row: {
+          auto_run: boolean
           created_at: string
           id: string
           is_active: boolean
           last_run_at: string | null
           name: string
+          run_interval_hours: number
           selector_links: string | null
           selector_logo: string | null
           selector_title: string | null
@@ -202,11 +204,13 @@ export type Database = {
           target_sub_category_id: string | null
         }
         Insert: {
+          auto_run?: boolean
           created_at?: string
           id?: string
           is_active?: boolean
           last_run_at?: string | null
           name: string
+          run_interval_hours?: number
           selector_links?: string | null
           selector_logo?: string | null
           selector_title?: string | null
@@ -216,11 +220,13 @@ export type Database = {
           target_sub_category_id?: string | null
         }
         Update: {
+          auto_run?: boolean
           created_at?: string
           id?: string
           is_active?: boolean
           last_run_at?: string | null
           name?: string
+          run_interval_hours?: number
           selector_links?: string | null
           selector_logo?: string | null
           selector_title?: string | null

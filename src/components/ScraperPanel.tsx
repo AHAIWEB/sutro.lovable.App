@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Globe, Plus, Trash2 } from "lucide-react";
+import { Loader2, Globe, Plus, Trash2, Save, Play, Clock } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -24,12 +26,69 @@ const ScraperPanel = () => {
   const { data: categories = [] } = useCategories();
 
   const [sourceUrl, setSourceUrl] = useState("");
+  const [configName, setConfigName] = useState("");
   const [loading, setLoading] = useState(false);
   const [scrapedLinks, setScrapedLinks] = useState<ScrapedLink[]>([]);
   const [targetCountryId, setTargetCountryId] = useState("");
   const [targetCategoryId, setTargetCategoryId] = useState("");
   const [targetSubCategoryId, setTargetSubCategoryId] = useState("");
+  const [autoRun, setAutoRun] = useState(false);
+  const [intervalHours, setIntervalHours] = useState(6);
   const [importing, setImporting] = useState(false);
+  const [savedConfigs, setSavedConfigs] = useState<any[]>([]);
+  const [savingCfg, setSavingCfg] = useState(false);
+
+  const loadConfigs = async () => {
+    const { data } = await supabase.from("scraper_configs").select("*").order("created_at", { ascending: false });
+    setSavedConfigs(data || []);
+  };
+  useEffect(() => { loadConfigs(); }, []);
+
+  const handleSaveConfig = async () => {
+    if (!configName.trim() || !sourceUrl.trim() || !targetCategoryId) {
+      toast({ title: "নাম, URL ও ক্যাটাগরি লাগবে", variant: "destructive" });
+      return;
+    }
+    setSavingCfg(true);
+    const { error } = await supabase.from("scraper_configs").insert({
+      name: configName.trim(),
+      source_url: sourceUrl.trim(),
+      target_category_id: targetCategoryId,
+      target_country_id: targetCountryId || null,
+      target_sub_category_id: targetSubCategoryId || null,
+      is_active: true,
+      auto_run: autoRun,
+      run_interval_hours: intervalHours,
+    });
+    setSavingCfg(false);
+    if (error) {
+      toast({ title: "সেভ ব্যর্থ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "কনফিগ সেভ হয়েছে ✅" });
+      setConfigName("");
+      loadConfigs();
+    }
+  };
+
+  const handleDeleteConfig = async (id: string) => {
+    await supabase.from("scraper_configs").delete().eq("id", id);
+    loadConfigs();
+    toast({ title: "মুছে ফেলা হয়েছে" });
+  };
+
+  const handleToggleAutoRun = async (id: string, val: boolean) => {
+    await supabase.from("scraper_configs").update({ auto_run: val }).eq("id", id);
+    loadConfigs();
+  };
+
+  const handleRunNow = async (cfg: any) => {
+    toast({ title: `${cfg.name} চলছে...` });
+    setSourceUrl(cfg.source_url);
+    setTargetCategoryId(cfg.target_category_id || "");
+    setTargetCountryId(cfg.target_country_id || "");
+    setTargetSubCategoryId(cfg.target_sub_category_id || "");
+    setTimeout(() => handleScrape(), 100);
+  };
 
   const handleScrape = async () => {
     if (!sourceUrl.trim()) return;
@@ -149,8 +208,77 @@ const ScraperPanel = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Save as auto-run config */}
+          <div className="pt-3 border-t border-border space-y-2">
+            <div className="flex items-center gap-3 text-xs flex-wrap">
+              <Label className="flex items-center gap-1.5 cursor-pointer">
+                <Switch checked={autoRun} onCheckedChange={setAutoRun} />
+                <Clock className="w-3 h-3" /> অটো-রান (লগইন ছাড়াই)
+              </Label>
+              {autoRun && (
+                <Select value={String(intervalHours)} onValueChange={(v) => setIntervalHours(parseInt(v))}>
+                  <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">প্রতি ১ ঘন্টা</SelectItem>
+                    <SelectItem value="6">প্রতি ৬ ঘন্টা</SelectItem>
+                    <SelectItem value="12">প্রতি ১২ ঘন্টা</SelectItem>
+                    <SelectItem value="24">প্রতি ২৪ ঘন্টা</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={configName}
+                onChange={(e) => setConfigName(e.target.value)}
+                placeholder="কনফিগের নাম (যেমন: Prothom Alo)"
+                className="text-xs"
+              />
+              <Button onClick={handleSaveConfig} disabled={savingCfg} size="sm" variant="outline">
+                {savingCfg ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                সেভ
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {savedConfigs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4" /> সংরক্ষিত কনফিগ ({savedConfigs.length.toLocaleString("bn-BD")})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {savedConfigs.map((cfg) => (
+              <div key={cfg.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-sm">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{cfg.name}</div>
+                  <div className="text-[10px] text-muted-foreground truncate font-mono">{cfg.source_url}</div>
+                  {cfg.last_run_at && (
+                    <div className="text-[10px] text-muted-foreground">শেষ রান: {new Date(cfg.last_run_at).toLocaleString("bn-BD")}</div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Switch
+                    checked={cfg.auto_run}
+                    onCheckedChange={(v) => handleToggleAutoRun(cfg.id, v)}
+                  />
+                  <span className="text-[10px] text-muted-foreground w-10">{cfg.run_interval_hours}ঘ</span>
+                </div>
+                <Button size="icon" variant="ghost" onClick={() => handleRunNow(cfg)} title="এখনই রান">
+                  <Play className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => handleDeleteConfig(cfg.id)}>
+                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {scrapedLinks.length > 0 && (
         <Card>

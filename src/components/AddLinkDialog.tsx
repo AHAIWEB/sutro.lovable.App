@@ -16,9 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Send } from "lucide-react";
+import { Plus, Send, Wand2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSubmitLink, type CategoryRow } from "@/hooks/useLinks";
+import { supabase } from "@/integrations/supabase/client";
 
 const linkSchema = z.object({
   url: z.string().trim().url({ message: "সঠিক URL দিন" }).max(500),
@@ -36,8 +37,35 @@ const AddLinkDialog = ({ categories }: AddLinkDialogProps) => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fetching, setFetching] = useState(false);
   const { toast } = useToast();
   const submitLink = useSubmitLink();
+
+  const handleAutoFetch = async () => {
+    if (!url.trim()) {
+      toast({ title: "আগে URL দিন", variant: "destructive" });
+      return;
+    }
+    setFetching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-metadata", {
+        body: { url: url.trim() },
+      });
+      if (error) throw error;
+      // Default mode returns meta { title, image, description, siteName }
+      const t = data?.title || data?.metadata?.title || data?.items?.[0]?.title;
+      if (t) {
+        setTitle(t);
+        toast({ title: "তথ্য পেয়েছি ✅", description: "শিরোনাম স্বয়ংক্রিয়ভাবে যোগ করা হলো" });
+      } else {
+        toast({ title: "তথ্য পাওয়া যায়নি", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "ফেচ ব্যর্থ", description: e.message, variant: "destructive" });
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const result = linkSchema.safeParse({ url, title, category });
@@ -92,13 +120,26 @@ const AddLinkDialog = ({ categories }: AddLinkDialogProps) => {
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
-            <Input
-              placeholder="https://example.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="font-mono text-sm"
-            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={handleAutoFetch}
+                disabled={fetching || !url.trim()}
+                title="URL থেকে শিরোনাম স্বয়ংক্রিয়ভাবে আনুন"
+              >
+                {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+              </Button>
+            </div>
             {errors.url && <p className="text-xs text-destructive mt-1">{errors.url}</p>}
+            <p className="text-[10px] text-muted-foreground mt-1">✨ বাটনে ক্লিক করে শিরোনাম স্বয়ংক্রিয়ভাবে নিন</p>
           </div>
           <div>
             <Input

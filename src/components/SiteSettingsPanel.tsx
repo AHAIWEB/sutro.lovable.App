@@ -1,18 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap } from "@/hooks/useSiteSettings";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2 } from "lucide-react";
 
 const SiteSettingsPanel = () => {
   const { data: settings } = useSiteSettings();
   const update = useUpdateSiteSetting();
   const { toast } = useToast();
   const [draft, setDraft] = useState<SiteSettingsMap | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (settings && !draft) setDraft(settings);
@@ -31,10 +35,38 @@ const SiteSettingsPanel = () => {
   const saveAll = async () => {
     const keys: (keyof SiteSettingsMap)[] = [
       "site_name", "site_tagline", "logo_url", "logo_emoji",
-      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color",
+      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count",
     ];
     for (const k of keys) await update.mutateAsync({ key: k, value: draft[k] });
     toast({ title: "সব সেটিংস সেভ হয়েছে ✅" });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "ফাইল ২MB এর কম হতে হবে", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("site-assets").getPublicUrl(path);
+      set("logo_url", pub.publicUrl);
+      await update.mutateAsync({ key: "logo_url", value: pub.publicUrl });
+      toast({ title: "লোগো আপলোড হয়েছে ✅" });
+    } catch (err: any) {
+      toast({ title: "আপলোড ব্যর্থ", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   };
 
   return (
@@ -57,14 +89,51 @@ const SiteSettingsPanel = () => {
               <Input value={draft.site_tagline} onChange={(e) => set("site_tagline", e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs flex items-center gap-1"><ImageIcon className="w-3 h-3" /> লোগো</Label>
+            <Tabs defaultValue={draft.logo_url ? "url" : "upload"} className="mt-1">
+              <TabsList className="h-8">
+                <TabsTrigger value="upload" className="text-xs h-6"><Upload className="w-3 h-3 mr-1" /> আপলোড</TabsTrigger>
+                <TabsTrigger value="url" className="text-xs h-6">URL</TabsTrigger>
+                <TabsTrigger value="emoji" className="text-xs h-6">ইমোজি</TabsTrigger>
+              </TabsList>
+              <TabsContent value="upload" className="mt-2">
+                <div className="flex items-center gap-3">
+                  {draft.logo_url && (
+                    <img src={draft.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-cover ring-1 ring-border bg-muted" />
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                  <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                    {uploading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Upload className="w-3 h-3 mr-1" />}
+                    {uploading ? "আপলোড হচ্ছে..." : "ছবি বাছাই (≤2MB)"}
+                  </Button>
+                  {draft.logo_url && (
+                    <Button size="sm" variant="ghost" onClick={async () => { set("logo_url", ""); await update.mutateAsync({ key: "logo_url", value: "" }); }}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="url" className="mt-2">
+                <Input value={draft.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://..." className="font-mono text-xs" />
+              </TabsContent>
+              <TabsContent value="emoji" className="mt-2">
+                <Input value={draft.logo_emoji} onChange={(e) => set("logo_emoji", e.target.value)} placeholder="📚" className="text-2xl" />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border">
             <div>
-              <Label className="text-xs">লোগো ইমোজি (URL না থাকলে)</Label>
-              <Input value={draft.logo_emoji} onChange={(e) => set("logo_emoji", e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><ImageIcon className="w-3 h-3" /> লোগো URL</Label>
-              <Input value={draft.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://..." />
+              <Label className="text-xs flex items-center gap-1"><Newspaper className="w-3 h-3" /> ফিচার্ড পোস্ট সংখ্যা</Label>
+              <Input
+                type="number"
+                min={3}
+                max={12}
+                value={draft.featured_count}
+                onChange={(e) => set("featured_count", Math.max(3, Math.min(12, parseInt(e.target.value) || 6)))}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">৩-১২ এর মধ্যে</p>
             </div>
           </div>
         </CardContent>
