@@ -26,12 +26,69 @@ const ScraperPanel = () => {
   const { data: categories = [] } = useCategories();
 
   const [sourceUrl, setSourceUrl] = useState("");
+  const [configName, setConfigName] = useState("");
   const [loading, setLoading] = useState(false);
   const [scrapedLinks, setScrapedLinks] = useState<ScrapedLink[]>([]);
   const [targetCountryId, setTargetCountryId] = useState("");
   const [targetCategoryId, setTargetCategoryId] = useState("");
   const [targetSubCategoryId, setTargetSubCategoryId] = useState("");
+  const [autoRun, setAutoRun] = useState(false);
+  const [intervalHours, setIntervalHours] = useState(6);
   const [importing, setImporting] = useState(false);
+  const [savedConfigs, setSavedConfigs] = useState<any[]>([]);
+  const [savingCfg, setSavingCfg] = useState(false);
+
+  const loadConfigs = async () => {
+    const { data } = await supabase.from("scraper_configs").select("*").order("created_at", { ascending: false });
+    setSavedConfigs(data || []);
+  };
+  useEffect(() => { loadConfigs(); }, []);
+
+  const handleSaveConfig = async () => {
+    if (!configName.trim() || !sourceUrl.trim() || !targetCategoryId) {
+      toast({ title: "নাম, URL ও ক্যাটাগরি লাগবে", variant: "destructive" });
+      return;
+    }
+    setSavingCfg(true);
+    const { error } = await supabase.from("scraper_configs").insert({
+      name: configName.trim(),
+      source_url: sourceUrl.trim(),
+      target_category_id: targetCategoryId,
+      target_country_id: targetCountryId || null,
+      target_sub_category_id: targetSubCategoryId || null,
+      is_active: true,
+      auto_run: autoRun,
+      run_interval_hours: intervalHours,
+    });
+    setSavingCfg(false);
+    if (error) {
+      toast({ title: "সেভ ব্যর্থ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "কনফিগ সেভ হয়েছে ✅" });
+      setConfigName("");
+      loadConfigs();
+    }
+  };
+
+  const handleDeleteConfig = async (id: string) => {
+    await supabase.from("scraper_configs").delete().eq("id", id);
+    loadConfigs();
+    toast({ title: "মুছে ফেলা হয়েছে" });
+  };
+
+  const handleToggleAutoRun = async (id: string, val: boolean) => {
+    await supabase.from("scraper_configs").update({ auto_run: val }).eq("id", id);
+    loadConfigs();
+  };
+
+  const handleRunNow = async (cfg: any) => {
+    toast({ title: `${cfg.name} চলছে...` });
+    setSourceUrl(cfg.source_url);
+    setTargetCategoryId(cfg.target_category_id || "");
+    setTargetCountryId(cfg.target_country_id || "");
+    setTargetSubCategoryId(cfg.target_sub_category_id || "");
+    setTimeout(() => handleScrape(), 100);
+  };
 
   const handleScrape = async () => {
     if (!sourceUrl.trim()) return;
