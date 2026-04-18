@@ -6,6 +6,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
 import FeaturedSlider from "@/components/FeaturedSlider";
+import HomeHero from "@/components/HomeHero";
 import LinkCard from "@/components/LinkCard";
 import AllCategoriesGrid from "@/components/AllCategoriesGrid";
 import CategoryNavMenu from "@/components/CategoryNavMenu";
@@ -89,6 +90,16 @@ const Index = () => {
         onSearchChange={setSearchQuery}
         totalLinks={links.length}
       />
+
+      {showCountryView && (
+        <HomeHero
+          totalLinks={links.length}
+          totalCategories={categories.length}
+          totalCountries={countries.filter((c) => (countryLinkCounts[c.id] ?? 0) > 0).length}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+      )}
 
       <FeaturedSlider />
 
