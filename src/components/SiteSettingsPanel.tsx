@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap } from "@/hooks/useSiteSettings";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2, LayoutGrid, GalleryHorizontal, List as ListIcon } from "lucide-react";
 
 const SiteSettingsPanel = () => {
   const { data: settings } = useSiteSettings();
@@ -35,7 +35,7 @@ const SiteSettingsPanel = () => {
   const saveAll = async () => {
     const keys: (keyof SiteSettingsMap)[] = [
       "site_name", "site_tagline", "logo_url", "logo_emoji",
-      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count",
+      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count", "featured_layout",
     ];
     for (const k of keys) await update.mutateAsync({ key: k, value: draft[k] });
     toast({ title: "সব সেটিংস সেভ হয়েছে ✅" });
