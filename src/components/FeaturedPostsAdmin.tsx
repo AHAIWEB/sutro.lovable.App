@@ -10,13 +10,21 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   useFeaturedPosts, useAddFeaturedPost, useUpdateFeaturedPost, useDeleteFeaturedPost,
 } from "@/hooks/useCountries";
-import { Plus, Trash2, Loader2, Link2, Rss, Globe, ArrowUp, ArrowDown, RefreshCw, Eye, EyeOff, Sparkles, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Loader2, Link2, Rss, Globe, RefreshCw, Eye, EyeOff, Sparkles, GripVertical } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const FeaturedPostsAdmin = () => {
   const { toast } = useToast();
