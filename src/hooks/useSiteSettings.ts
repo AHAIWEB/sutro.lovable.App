@@ -12,6 +12,7 @@ export interface SiteSettingsMap {
   primary_color: string;
   accent_color: string;
   featured_count: number;
+  featured_layout: "carousel" | "magazine" | "minimal";
 }
 
 const DEFAULTS: SiteSettingsMap = {
@@ -25,6 +26,7 @@ const DEFAULTS: SiteSettingsMap = {
   primary_color: "#0d9488",
   accent_color: "#f59e0b",
   featured_count: 6,
+  featured_layout: "carousel",
 };
 
 export function useSiteSettings() {
