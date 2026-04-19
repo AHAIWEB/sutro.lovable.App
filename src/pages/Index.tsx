@@ -103,12 +103,15 @@ const Index = () => {
         />
       )}
 
-      {(() => {
-        const layout = settings?.featured_layout ?? "carousel";
-        if (layout === "magazine") return <MagazineFeaturedGrid />;
-        if (layout === "minimal") return <MinimalFeaturedList />;
-        return <FeaturedCarousel />;
-      })()}
+      <Suspense fallback={<div className="h-48 bg-card/30 animate-pulse border-b border-border" />}>
+        {(() => {
+          const layout = settings?.featured_layout ?? "carousel";
+          if (layout === "magazine") return <MagazineFeaturedGrid />;
+          if (layout === "minimal") return <MinimalFeaturedList />;
+          if (layout === "hero-sidebar") return <HeroSidebarFeatured />;
+          return <FeaturedCarousel />;
+        })()}
+      </Suspense>
 
       {!isLoading && (
         <>

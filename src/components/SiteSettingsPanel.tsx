@@ -137,11 +137,12 @@ const SiteSettingsPanel = () => {
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1"><LayoutGrid className="w-3 h-3" /> হোমপেজ ফিচার্ড লেআউট</Label>
-              <div className="grid grid-cols-3 gap-1.5 mt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
                 {([
                   { v: "carousel", label: "ক্যারোসেল", Icon: GalleryHorizontal },
                   { v: "magazine", label: "ম্যাগাজিন", Icon: LayoutGrid },
                   { v: "minimal", label: "মিনিমাল", Icon: ListIcon },
+                  { v: "hero-sidebar", label: "হিরো+সাইডবার", Icon: Columns2 },
                 ] as const).map(({ v, label, Icon }) => {
                   const active = draft.featured_layout === v;
                   return (
