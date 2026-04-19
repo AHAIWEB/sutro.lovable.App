@@ -5,7 +5,7 @@ import SutraHeader from "@/components/SutraHeader";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
-import MagazineFeaturedGrid from "@/components/MagazineFeaturedGrid";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
 import HomeHero from "@/components/HomeHero";
 import LinkCard from "@/components/LinkCard";
 import AllCategoriesGrid from "@/components/AllCategoriesGrid";
@@ -101,7 +101,7 @@ const Index = () => {
         />
       )}
 
-      <MagazineFeaturedGrid />
+      <FeaturedCarousel />
 
       {!isLoading && (
         <>

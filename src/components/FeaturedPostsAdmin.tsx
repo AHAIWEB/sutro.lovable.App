@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   useFeaturedPosts, useAddFeaturedPost, useUpdateFeaturedPost, useDeleteFeaturedPost,
 } from "@/hooks/useCountries";
-import { Plus, Trash2, Loader2, Link2, Rss, Globe, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Loader2, Link2, Rss, Globe, ArrowUp, ArrowDown, RefreshCw, Eye, EyeOff, Sparkles, ExternalLink } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -136,17 +136,79 @@ const FeaturedPostsAdmin = () => {
     setFetchUrl(""); setFetchedItems([]); setAutoFetch(false); setOpen(false);
   };
 
+  const handleBulkToggle = async (active: boolean) => {
+    try {
+      const ids = posts.map((p) => p.id);
+      await Promise.all(ids.map((id) => updatePost.mutateAsync({ id, is_active: active })));
+      toast({ title: active ? "সব পোস্ট সক্রিয় ✅" : "সব পোস্ট নিষ্ক্রিয় ⏸️" });
+    } catch (err: any) {
+      toast({ title: "ব্যর্থ", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleRefreshNow = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("refresh-featured-posts");
+      if (error) throw error;
+      toast({
+        title: "রিফ্রেশ সম্পন্ন ✅",
+        description: `${data?.refreshed ?? 0} টি আপডেট, ${data?.deleted ?? 0} টি junk ডিলিট`,
+      });
+    } catch (err: any) {
+      toast({ title: "রিফ্রেশ ব্যর্থ", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const activeCount = posts.filter((p) => p.is_active).length;
+  const autoCount = posts.filter((p) => p.auto_fetch).length;
+
   return (
     <div className="space-y-4">
+      {/* Live stats dashboard */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-3">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">মোট পোস্ট</p>
+            <p className="text-2xl font-bold text-primary">{posts.length.toLocaleString("bn-BD")}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20">
+          <CardContent className="p-3">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">সক্রিয়</p>
+            <p className="text-2xl font-bold text-emerald-600">{activeCount.toLocaleString("bn-BD")}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+          <CardContent className="p-3">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">অটো-ফেচ</p>
+            <p className="text-2xl font-bold text-amber-600">{autoCount.toLocaleString("bn-BD")}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-sky-500/20">
+          <CardContent className="p-3">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">ম্যানুয়াল</p>
+            <p className="text-2xl font-bold text-sky-600">{(posts.length - autoCount).toLocaleString("bn-BD")}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Action bar */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{posts.length} টি পোস্ট</Badge>
-          <Badge variant="outline">{posts.filter(p => p.is_active).length} সক্রিয়</Badge>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button size="sm" variant="outline" onClick={() => handleBulkToggle(true)} className="gap-1 h-8">
+            <Eye className="w-3.5 h-3.5" /> সব চালু
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => handleBulkToggle(false)} className="gap-1 h-8">
+            <EyeOff className="w-3.5 h-3.5" /> সব বন্ধ
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleRefreshNow} className="gap-1 h-8">
+            <RefreshCw className="w-3.5 h-3.5" /> এখনই রিফ্রেশ
+          </Button>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1.5">
-              <Plus className="w-4 h-4" /> নতুন ফিচার পোস্ট
+              <Sparkles className="w-4 h-4" /> নতুন ফিচার পোস্ট
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
@@ -167,6 +229,7 @@ const FeaturedPostsAdmin = () => {
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="শিরোনাম *" />
                 <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL *" className="font-mono text-xs" />
                 <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="ছবি URL" />
+                {imageUrl && <img src={imageUrl} alt="" className="w-full h-28 object-cover rounded-lg border" />}
                 <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="বিবরণ" />
                 <Input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="সোর্স নাম" />
                 <Button className="w-full" onClick={handleManualAdd}>যোগ করুন</Button>
