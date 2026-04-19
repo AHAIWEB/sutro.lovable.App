@@ -12,7 +12,7 @@ export interface SiteSettingsMap {
   primary_color: string;
   accent_color: string;
   featured_count: number;
-  featured_layout: "carousel" | "magazine" | "minimal";
+  featured_layout: "carousel" | "magazine" | "minimal" | "hero-sidebar";
 }
 
 const DEFAULTS: SiteSettingsMap = {

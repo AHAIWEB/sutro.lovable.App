@@ -1,13 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import NewsTicker from "@/components/NewsTicker";
 import SutraHeader from "@/components/SutraHeader";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
-import FeaturedCarousel from "@/components/FeaturedCarousel";
-import MagazineFeaturedGrid from "@/components/MagazineFeaturedGrid";
-import MinimalFeaturedList from "@/components/MinimalFeaturedList";
 import HomeHero from "@/components/HomeHero";
 import LinkCard from "@/components/LinkCard";
 import AllCategoriesGrid from "@/components/AllCategoriesGrid";
@@ -15,6 +12,11 @@ import CategoryNavMenu from "@/components/CategoryNavMenu";
 import { useCategories, useLinks } from "@/hooks/useLinks";
 import { useCountries, useSubCategories, CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const FeaturedCarousel = lazy(() => import("@/components/FeaturedCarousel"));
+const MagazineFeaturedGrid = lazy(() => import("@/components/MagazineFeaturedGrid"));
+const MinimalFeaturedList = lazy(() => import("@/components/MinimalFeaturedList"));
+const HeroSidebarFeatured = lazy(() => import("@/components/HeroSidebarFeatured"));
 
 const Index = () => {
   const [activeCountry, setActiveCountry] = useState("all");
@@ -103,12 +105,15 @@ const Index = () => {
         />
       )}
 
-      {(() => {
-        const layout = settings?.featured_layout ?? "carousel";
-        if (layout === "magazine") return <MagazineFeaturedGrid />;
-        if (layout === "minimal") return <MinimalFeaturedList />;
-        return <FeaturedCarousel />;
-      })()}
+      <Suspense fallback={<div className="h-48 bg-card/30 animate-pulse border-b border-border" />}>
+        {(() => {
+          const layout = settings?.featured_layout ?? "carousel";
+          if (layout === "magazine") return <MagazineFeaturedGrid />;
+          if (layout === "minimal") return <MinimalFeaturedList />;
+          if (layout === "hero-sidebar") return <HeroSidebarFeatured />;
+          return <FeaturedCarousel />;
+        })()}
+      </Suspense>
 
       {!isLoading && (
         <>

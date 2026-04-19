@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap } from "@/hooks/useSiteSettings";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2, LayoutGrid, GalleryHorizontal, List as ListIcon } from "lucide-react";
+import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2, LayoutGrid, GalleryHorizontal, List as ListIcon, Columns2 } from "lucide-react";
 
 const SiteSettingsPanel = () => {
   const { data: settings } = useSiteSettings();
@@ -137,11 +137,12 @@ const SiteSettingsPanel = () => {
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1"><LayoutGrid className="w-3 h-3" /> হোমপেজ ফিচার্ড লেআউট</Label>
-              <div className="grid grid-cols-3 gap-1.5 mt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
                 {([
                   { v: "carousel", label: "ক্যারোসেল", Icon: GalleryHorizontal },
                   { v: "magazine", label: "ম্যাগাজিন", Icon: LayoutGrid },
                   { v: "minimal", label: "মিনিমাল", Icon: ListIcon },
+                  { v: "hero-sidebar", label: "হিরো+সাইডবার", Icon: Columns2 },
                 ] as const).map(({ v, label, Icon }) => {
                   const active = draft.featured_layout === v;
                   return (
