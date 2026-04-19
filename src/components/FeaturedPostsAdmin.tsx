@@ -394,4 +394,52 @@ function FetchedItemsList({ items, onImport, onRemove }: { items: any[]; onImpor
   );
 }
 
+function SortableFeaturedRow({
+  post,
+  onToggleActive,
+  onDelete,
+}: {
+  post: any;
+  onToggleActive: (checked: boolean) => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: post.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : ("auto" as const),
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className={isDragging ? "ring-2 ring-primary shadow-lg" : ""}>
+      <CardContent className="p-3 flex items-center gap-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1 -ml-1 touch-none"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        {post.image_url && (
+          <img src={post.image_url} alt="" className="w-12 h-9 rounded object-cover flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-xs truncate">{post.title}</p>
+          <p className="text-[10px] text-muted-foreground truncate">{post.url}</p>
+          <div className="flex gap-1 mt-0.5">
+            {post.auto_fetch && <Badge variant="secondary" className="text-[9px] px-1 py-0">অটো</Badge>}
+            {post.source_name && <Badge variant="outline" className="text-[9px] px-1 py-0">{post.source_name}</Badge>}
+          </div>
+        </div>
+        <Switch checked={post.is_active} onCheckedChange={onToggleActive} />
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onDelete}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default FeaturedPostsAdmin;
