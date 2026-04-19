@@ -101,7 +101,7 @@ const Index = () => {
         />
       )}
 
-      <MagazineFeaturedGrid />
+      <FeaturedCarousel />
 
       {!isLoading && (
         <>
