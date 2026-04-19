@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   useFeaturedPosts, useAddFeaturedPost, useUpdateFeaturedPost, useDeleteFeaturedPost,
 } from "@/hooks/useCountries";
-import { Plus, Trash2, Loader2, Link2, Rss, Globe, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Loader2, Link2, Rss, Globe, ArrowUp, ArrowDown, RefreshCw, Eye, EyeOff, Sparkles, ExternalLink } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
