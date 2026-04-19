@@ -132,11 +132,28 @@ const FeaturedPostsAdmin = () => {
     }
   };
 
-  const handleMovePost = (id: string, direction: "up" | "down") => {
-    const idx = posts.findIndex((p) => p.id === id);
-    if (idx < 0) return;
-    const newOrder = direction === "up" ? Math.max(0, posts[idx].sort_order - 1) : posts[idx].sort_order + 1;
-    updatePost.mutate({ id, sort_order: newOrder });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = posts.findIndex((p) => p.id === active.id);
+    const newIndex = posts.findIndex((p) => p.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(posts, oldIndex, newIndex);
+    try {
+      await Promise.all(
+        reordered.map((p, i) =>
+          p.sort_order === i ? Promise.resolve() : updatePost.mutateAsync({ id: p.id, sort_order: i })
+        )
+      );
+      toast({ title: "ক্রম আপডেট হয়েছে ✅" });
+    } catch (err: any) {
+      toast({ title: "ক্রম সেভ ব্যর্থ", description: err.message, variant: "destructive" });
+    }
   };
 
   const resetForm = () => {
