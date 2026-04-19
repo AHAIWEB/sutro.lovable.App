@@ -339,45 +339,20 @@ const FeaturedPostsAdmin = () => {
       </div>
 
       {/* Existing posts list */}
-      {posts.map((post) => (
-        <Card key={post.id}>
-          <CardContent className="p-3 flex items-center gap-3">
-            <div className="flex flex-col gap-0.5">
-              <button onClick={() => handleMovePost(post.id, "up")} className="text-muted-foreground hover:text-foreground p-0.5">
-                <ArrowUp className="w-3 h-3" />
-              </button>
-              <button onClick={() => handleMovePost(post.id, "down")} className="text-muted-foreground hover:text-foreground p-0.5">
-                <ArrowDown className="w-3 h-3" />
-              </button>
-            </div>
-            {post.image_url && (
-              <img src={post.image_url} alt="" className="w-12 h-9 rounded object-cover flex-shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-xs truncate">{post.title}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{post.url}</p>
-              <div className="flex gap-1 mt-0.5">
-                {post.auto_fetch && <Badge variant="secondary" className="text-[9px] px-1 py-0">অটো</Badge>}
-                {post.source_name && <Badge variant="outline" className="text-[9px] px-1 py-0">{post.source_name}</Badge>}
-              </div>
-            </div>
-            <Switch
-              checked={post.is_active}
-              onCheckedChange={(checked) => updatePost.mutate({ id: post.id, is_active: checked })}
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-destructive"
-              onClick={() => deletePost.mutate(post.id, {
-                onSuccess: () => toast({ title: "ডিলিট হয়েছে" }),
-              })}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={posts.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {posts.map((post) => (
+              <SortableFeaturedRow
+                key={post.id}
+                post={post}
+                onToggleActive={(checked) => updatePost.mutate({ id: post.id, is_active: checked })}
+                onDelete={() => deletePost.mutate(post.id, { onSuccess: () => toast({ title: "ডিলিট হয়েছে" }) })}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {posts.length === 0 && (
         <Card>
