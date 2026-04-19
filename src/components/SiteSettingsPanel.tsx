@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap } from "@/hooks/useSiteSettings";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2, LayoutGrid, GalleryHorizontal, List as ListIcon } from "lucide-react";
 
 const SiteSettingsPanel = () => {
   const { data: settings } = useSiteSettings();
@@ -35,7 +35,7 @@ const SiteSettingsPanel = () => {
   const saveAll = async () => {
     const keys: (keyof SiteSettingsMap)[] = [
       "site_name", "site_tagline", "logo_url", "logo_emoji",
-      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count",
+      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count", "featured_layout",
     ];
     for (const k of keys) await update.mutateAsync({ key: k, value: draft[k] });
     toast({ title: "সব সেটিংস সেভ হয়েছে ✅" });
@@ -134,6 +134,38 @@ const SiteSettingsPanel = () => {
                 onChange={(e) => set("featured_count", Math.max(3, Math.min(12, parseInt(e.target.value) || 6)))}
               />
               <p className="text-[10px] text-muted-foreground mt-1">৩-১২ এর মধ্যে</p>
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1"><LayoutGrid className="w-3 h-3" /> হোমপেজ ফিচার্ড লেআউট</Label>
+              <div className="grid grid-cols-3 gap-1.5 mt-1">
+                {([
+                  { v: "carousel", label: "ক্যারোসেল", Icon: GalleryHorizontal },
+                  { v: "magazine", label: "ম্যাগাজিন", Icon: LayoutGrid },
+                  { v: "minimal", label: "মিনিমাল", Icon: ListIcon },
+                ] as const).map(({ v, label, Icon }) => {
+                  const active = draft.featured_layout === v;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={async () => {
+                        set("featured_layout", v);
+                        await update.mutateAsync({ key: "featured_layout", value: v });
+                        toast({ title: `লেআউট: ${label} ✅` });
+                      }}
+                      className={`flex flex-col items-center gap-1 px-2 py-2 rounded-md border text-[10px] transition-all ${
+                        active
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/40 text-muted-foreground"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">লাইভ সাইটে সাথে সাথে আপডেট হবে</p>
             </div>
           </div>
         </CardContent>

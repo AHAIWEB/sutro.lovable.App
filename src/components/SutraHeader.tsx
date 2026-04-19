@@ -43,21 +43,32 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
     <header className="border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-30">
       <div className="container flex items-center justify-between py-3 gap-4">
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center overflow-hidden shadow-md shadow-primary/20">
-            {logoUrl ? (
-              <img src={logoUrl} alt={siteName} className="w-full h-full object-cover" />
-            ) : logoEmoji ? (
-              <span className="text-lg">{logoEmoji}</span>
-            ) : (
-              <Globe className="w-5 h-5 text-primary-foreground" />
-            )}
-          </div>
-          <div>
-            <h1 className="font-display text-xl text-foreground leading-none">{siteName}</h1>
-            <span className="font-meta text-muted-foreground hidden sm:block">
-              {tagline || `${totalLinks.toLocaleString("bn-BD")} টি সাইট`}
-            </span>
-          </div>
+          {logoUrl ? (
+            // Landscape logo — wide brand bar, no cropping
+            <a href="/" className="flex items-center h-10 sm:h-11 max-w-[180px] sm:max-w-[220px] overflow-hidden">
+              <img
+                src={logoUrl}
+                alt={siteName}
+                className="h-full w-auto object-contain"
+              />
+            </a>
+          ) : (
+            <>
+              <div className="h-10 px-2.5 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md shadow-primary/20">
+                {logoEmoji ? (
+                  <span className="text-lg">{logoEmoji}</span>
+                ) : (
+                  <Globe className="w-5 h-5 text-primary-foreground" />
+                )}
+              </div>
+              <div>
+                <h1 className="font-display text-xl text-foreground leading-none">{siteName}</h1>
+                <span className="font-meta text-muted-foreground hidden sm:block">
+                  {tagline || `${totalLinks.toLocaleString("bn-BD")} টি সাইট`}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="relative flex-1 max-w-sm">

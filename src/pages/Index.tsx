@@ -6,6 +6,8 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
+import MagazineFeaturedGrid from "@/components/MagazineFeaturedGrid";
+import MinimalFeaturedList from "@/components/MinimalFeaturedList";
 import HomeHero from "@/components/HomeHero";
 import LinkCard from "@/components/LinkCard";
 import AllCategoriesGrid from "@/components/AllCategoriesGrid";
@@ -101,7 +103,12 @@ const Index = () => {
         />
       )}
 
-      <FeaturedCarousel />
+      {(() => {
+        const layout = settings?.featured_layout ?? "carousel";
+        if (layout === "magazine") return <MagazineFeaturedGrid />;
+        if (layout === "minimal") return <MinimalFeaturedList />;
+        return <FeaturedCarousel />;
+      })()}
 
       {!isLoading && (
         <>
