@@ -106,8 +106,10 @@ const Index = () => {
         categories={categories}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        totalLinks={links.length}
       />
+
+      {/* Top ad slot — admin controlled */}
+      <AdSlotView slot="ad_top" />
 
       {showCountryView && (
         <HomeHero
@@ -128,6 +130,9 @@ const Index = () => {
           return <FeaturedCarousel />;
         })()}
       </Suspense>
+
+      {/* Mid ad slot — between featured and main grid */}
+      <AdSlotView slot="ad_mid" />
 
       {!isLoading && (
         <>
@@ -189,6 +194,14 @@ const Index = () => {
               linkCounts={linkCounts}
               onSelect={(id) => { setActiveCategory(id); setActiveCountry("all"); }}
             />
+
+            {/* Trending + Recently added highlight strips */}
+            {trendingLinks.length > 0 && (
+              <HomeHighlights title="জনপ্রিয় সাইট" variant="trending" links={trendingLinks} />
+            )}
+            {recentLinks.length > 0 && (
+              <HomeHighlights title="নতুন সংযোজন" variant="recent" links={recentLinks} />
+            )}
 
             {/* Other countries grouped by continent (BD excluded) */}
             {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => {
