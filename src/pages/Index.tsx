@@ -31,6 +31,17 @@ const Index = () => {
   const { data: countries = [], isLoading: countriesLoading } = useCountries();
   const { data: subCategories = [] } = useSubCategories();
   const { data: settings } = useSiteSettings();
+  useApplyFonts(settings?.font_heading, settings?.font_body);
+
+  // Trending = highest visits, Recent = newest by created_at
+  const trendingLinks = useMemo(
+    () => [...links].sort((a, b) => b.visits - a.visits).slice(0, 8),
+    [links]
+  );
+  const recentLinks = useMemo(
+    () => [...links].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8),
+    [links]
+  );
 
   const linkCounts = useMemo(() => {
     const counts: Record<string, number> = {};
