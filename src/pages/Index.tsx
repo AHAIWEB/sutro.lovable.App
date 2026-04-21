@@ -269,6 +269,9 @@ const Index = () => {
         )}
       </main>
 
+      {/* Bottom ad slot — admin controlled */}
+      <AdSlotView slot="ad_bottom" />
+
       <footer className="border-t border-border py-6 mt-4 bg-gradient-to-b from-transparent to-card/40">
         <div className="container space-y-3 text-center">
           {settings?.footer_links && settings.footer_links.length > 0 && (

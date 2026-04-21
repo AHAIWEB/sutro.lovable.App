@@ -19,7 +19,8 @@ import {
   useAddCategory, useUpdateCategory, useDeleteCategory,
 } from "@/hooks/useAdmin";
 import {
-  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen, Star, Search as SearchIcon, Settings,
+  LogOut, Check, X, Trash2, Edit, Plus, ArrowLeft, Globe, Shield, Link2, FolderOpen, Star,
+  Search as SearchIcon, Settings, TrendingUp, Eye, Sparkles, Activity,
 } from "lucide-react";
 import BulkImportDialog from "@/components/BulkImportDialog";
 import ScraperPanel from "@/components/ScraperPanel";
@@ -121,33 +122,8 @@ const Admin = () => {
       </header>
 
       <main className="container py-6 space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{pendingLinks.length}</p>
-              <p className="text-xs text-muted-foreground">পেন্ডিং</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{approvedLinks.length}</p>
-              <p className="text-xs text-muted-foreground">অ্যাপ্রুভড</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{links.length}</p>
-              <p className="text-xs text-muted-foreground">মোট লিংক</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{categories.length}</p>
-              <p className="text-xs text-muted-foreground">ক্যাটাগরি</p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Dynamic Stats Dashboard */}
+        <DynamicDashboard links={links} categories={categories} pendingCount={pendingLinks.length} approvedCount={approvedLinks.length} />
 
         <Tabs defaultValue="pending" className="space-y-4">
           <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-3xl">
