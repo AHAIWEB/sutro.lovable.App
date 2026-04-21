@@ -4,11 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap } from "@/hooks/useSiteSettings";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSiteSettings, useUpdateSiteSetting, type SiteSettingsMap, GOOGLE_FONTS } from "@/hooks/useSiteSettings";
+import { preloadFont } from "@/hooks/useGoogleFonts";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper, Loader2, LayoutGrid, GalleryHorizontal, List as ListIcon, Columns2 } from "lucide-react";
+import {
+  Save, Plus, Trash2, Palette, Image as ImageIcon, Menu as MenuIcon, Type, Upload, Newspaper,
+  Loader2, LayoutGrid, GalleryHorizontal, List as ListIcon, Columns2, Megaphone, Moon, Sun, Ruler,
+} from "lucide-react";
 
 const SiteSettingsPanel = () => {
   const { data: settings } = useSiteSettings();
@@ -16,7 +22,8 @@ const SiteSettingsPanel = () => {
   const { toast } = useToast();
   const [draft, setDraft] = useState<SiteSettingsMap | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const fileRefDark = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"light" | "dark" | null>(null);
 
   useEffect(() => {
     if (settings && !draft) setDraft(settings);
@@ -33,40 +40,110 @@ const SiteSettingsPanel = () => {
   };
 
   const saveAll = async () => {
-    const keys: (keyof SiteSettingsMap)[] = [
-      "site_name", "site_tagline", "logo_url", "logo_emoji",
-      "footer_text", "footer_links", "header_menu", "primary_color", "accent_color", "featured_count", "featured_layout",
-    ];
+    const keys = Object.keys(draft) as (keyof SiteSettingsMap)[];
     for (const k of keys) await update.mutateAsync({ key: k, value: draft[k] });
     toast({ title: "সব সেটিংস সেভ হয়েছে ✅" });
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, variant: "light" | "dark") => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
       toast({ title: "ফাইল ২MB এর কম হতে হবে", variant: "destructive" });
       return;
     }
-    setUploading(true);
+    setUploading(variant);
     try {
       const ext = file.name.split(".").pop() || "png";
-      const path = `logo-${Date.now()}.${ext}`;
+      const path = `logo-${variant}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, {
         cacheControl: "3600",
         upsert: false,
       });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("site-assets").getPublicUrl(path);
-      set("logo_url", pub.publicUrl);
-      await update.mutateAsync({ key: "logo_url", value: pub.publicUrl });
-      toast({ title: "লোগো আপলোড হয়েছে ✅" });
+      const key = variant === "dark" ? "logo_url_dark" : "logo_url";
+      set(key, pub.publicUrl);
+      await update.mutateAsync({ key, value: pub.publicUrl });
+      toast({ title: `${variant === "dark" ? "ডার্ক" : "লাইট"} লোগো আপলোড হয়েছে ✅` });
     } catch (err: any) {
       toast({ title: "আপলোড ব্যর্থ", description: err.message, variant: "destructive" });
     } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+      setUploading(null);
+      const ref = variant === "dark" ? fileRefDark : fileRef;
+      if (ref.current) ref.current.value = "";
     }
+  };
+
+  const renderLogoBlock = (
+    variant: "light" | "dark",
+    urlKey: "logo_url" | "logo_url_dark",
+    ref: React.RefObject<HTMLInputElement>,
+  ) => (
+    <div className="rounded-lg border border-border p-3 space-y-2">
+      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+        {variant === "dark" ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+        {variant === "dark" ? "ডার্ক মোড লোগো" : "লাইট মোড লোগো"}
+      </div>
+      <Tabs defaultValue={draft[urlKey] ? "url" : "upload"}>
+        <TabsList className="h-7">
+          <TabsTrigger value="upload" className="text-[11px] h-5"><Upload className="w-3 h-3 mr-1" /> আপলোড</TabsTrigger>
+          <TabsTrigger value="url" className="text-[11px] h-5">URL</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upload" className="mt-2">
+          <div className="flex items-center gap-2">
+            {draft[urlKey] && (
+              <img src={draft[urlKey]} alt="logo" className={`h-10 w-auto max-w-[120px] object-contain rounded ring-1 ring-border ${variant === "dark" ? "bg-zinc-900" : "bg-muted"}`} />
+            )}
+            <input ref={ref} type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, variant)} className="hidden" />
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => ref.current?.click()} disabled={uploading === variant}>
+              {uploading === variant ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Upload className="w-3 h-3 mr-1" />}
+              {uploading === variant ? "আপলোড..." : "ছবি বাছাই"}
+            </Button>
+            {draft[urlKey] && (
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={async () => { set(urlKey, ""); await update.mutateAsync({ key: urlKey, value: "" }); }}>
+                <Trash2 className="w-3 h-3 text-destructive" />
+              </Button>
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="url" className="mt-2">
+          <Input value={draft[urlKey]} onChange={(e) => set(urlKey, e.target.value)} placeholder="https://..." className="font-mono text-xs h-8" />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+
+  const renderAdSlot = (key: "ad_top" | "ad_mid" | "ad_bottom", label: string, hint: string) => {
+    const slot = draft[key];
+    return (
+      <div className="rounded-lg border border-border p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium flex items-center gap-1">
+            <Megaphone className="w-3.5 h-3.5" /> {label}
+          </Label>
+          <Switch
+            checked={slot.enabled}
+            onCheckedChange={async (v) => {
+              const next = { ...slot, enabled: v };
+              set(key, next);
+              await update.mutateAsync({ key, value: next });
+            }}
+          />
+        </div>
+        <Textarea
+          value={slot.html}
+          onChange={(e) => set(key, { ...slot, html: e.target.value })}
+          rows={3}
+          placeholder='<a href="..."><img src="..." alt="ad" /></a>  বা AdSense snippet'
+          className="font-mono text-[11px]"
+        />
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] text-muted-foreground">{hint}</p>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => saveOne(key)}>সেভ</Button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -89,38 +166,38 @@ const SiteSettingsPanel = () => {
               <Input value={draft.site_tagline} onChange={(e) => set("site_tagline", e.target.value)} />
             </div>
           </div>
-          <div>
-            <Label className="text-xs flex items-center gap-1"><ImageIcon className="w-3 h-3" /> লোগো</Label>
-            <Tabs defaultValue={draft.logo_url ? "url" : "upload"} className="mt-1">
-              <TabsList className="h-8">
-                <TabsTrigger value="upload" className="text-xs h-6"><Upload className="w-3 h-3 mr-1" /> আপলোড</TabsTrigger>
-                <TabsTrigger value="url" className="text-xs h-6">URL</TabsTrigger>
-                <TabsTrigger value="emoji" className="text-xs h-6">ইমোজি</TabsTrigger>
-              </TabsList>
-              <TabsContent value="upload" className="mt-2">
-                <div className="flex items-center gap-3">
-                  {draft.logo_url && (
-                    <img src={draft.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-cover ring-1 ring-border bg-muted" />
-                  )}
-                  <input ref={fileRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-                  <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                    {uploading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Upload className="w-3 h-3 mr-1" />}
-                    {uploading ? "আপলোড হচ্ছে..." : "ছবি বাছাই (≤2MB)"}
-                  </Button>
-                  {draft.logo_url && (
-                    <Button size="sm" variant="ghost" onClick={async () => { set("logo_url", ""); await update.mutateAsync({ key: "logo_url", value: "" }); }}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-              </TabsContent>
-              <TabsContent value="url" className="mt-2">
-                <Input value={draft.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://..." className="font-mono text-xs" />
-              </TabsContent>
-              <TabsContent value="emoji" className="mt-2">
-                <Input value={draft.logo_emoji} onChange={(e) => set("logo_emoji", e.target.value)} placeholder="📚" className="text-2xl" />
-              </TabsContent>
-            </Tabs>
+
+          {/* Logos: light + dark */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {renderLogoBlock("light", "logo_url", fileRef)}
+            {renderLogoBlock("dark", "logo_url_dark", fileRefDark)}
+          </div>
+
+          {/* Logo emoji fallback + size */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs flex items-center gap-1"><ImageIcon className="w-3 h-3" /> ইমোজি (লোগো না থাকলে)</Label>
+              <Input value={draft.logo_emoji} onChange={(e) => set("logo_emoji", e.target.value)} placeholder="📚" className="text-2xl" />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1"><Ruler className="w-3 h-3" /> লোগো সাইজ</Label>
+              <div className="grid grid-cols-3 gap-1.5 mt-1">
+                {(["small", "medium", "large"] as const).map((s) => {
+                  const active = draft.logo_size === s;
+                  const label = s === "small" ? "ছোট" : s === "medium" ? "মাঝারি" : "বড়";
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={async () => { set("logo_size", s); await update.mutateAsync({ key: "logo_size", value: s }); toast({ title: `সাইজ: ${label} ✅` }); }}
+                      className={`px-2 py-2 rounded-md border text-xs transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40 text-muted-foreground"}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border">
@@ -136,7 +213,7 @@ const SiteSettingsPanel = () => {
               <p className="text-[10px] text-muted-foreground mt-1">৩-১২ এর মধ্যে</p>
             </div>
             <div>
-              <Label className="text-xs flex items-center gap-1"><LayoutGrid className="w-3 h-3" /> হোমপেজ ফিচার্ড লেআউট</Label>
+              <Label className="text-xs flex items-center gap-1"><LayoutGrid className="w-3 h-3" /> ফিচার্ড লেআউট</Label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
                 {([
                   { v: "carousel", label: "ক্যারোসেল", Icon: GalleryHorizontal },
@@ -166,15 +243,56 @@ const SiteSettingsPanel = () => {
                   );
                 })}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">লাইভ সাইটে সাথে সাথে আপডেট হবে</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Typography */}
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Type className="w-4 h-4" /> টাইপোগ্রাফি (Google Fonts)</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(["font_heading", "font_body"] as const).map((k) => (
+              <div key={k}>
+                <Label className="text-xs">{k === "font_heading" ? "হেডিং ফন্ট" : "বডি ফন্ট"}</Label>
+                <Select
+                  value={GOOGLE_FONTS.includes(draft[k]) ? draft[k] : "__custom__"}
+                  onValueChange={async (v) => {
+                    if (v === "__custom__") return;
+                    set(k, v);
+                    preloadFont(v);
+                    await update.mutateAsync({ key: k, value: v });
+                  }}
+                >
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {GOOGLE_FONTS.map((f) => (
+                      <SelectItem key={f} value={f} style={{ fontFamily: `'${f}', system-ui` }}>{f}</SelectItem>
+                    ))}
+                    <SelectItem value="__custom__">— কাস্টম নাম টাইপ করুন ↓</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  className="mt-1.5 h-8 text-xs"
+                  value={draft[k]}
+                  onChange={(e) => set(k, e.target.value)}
+                  onBlur={async () => { preloadFont(draft[k]); await update.mutateAsync({ key: k, value: draft[k] }); }}
+                  placeholder="যেকোনো Google Font name..."
+                />
+                <p className="text-xs mt-1.5 px-2 py-1.5 rounded bg-muted/50" style={{ fontFamily: `'${draft[k]}', system-ui` }}>
+                  নমুনা — Sample Text ১২৩
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground">📌 সেভ করার সাথে সাথে পুরো সাইটে ফন্ট লাইভ আপডেট হয়।</p>
+        </CardContent>
+      </Card>
+
       {/* Theme colors */}
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Palette className="w-4 h-4" /> থিম কালার (লাইভ প্রিভিউ)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Palette className="w-4 h-4" /> থিম কালার</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -199,7 +317,19 @@ const SiteSettingsPanel = () => {
             </div>
             <Button size="sm" onClick={async () => { await saveOne("primary_color"); await saveOne("accent_color"); }}>সেভ ও প্রয়োগ</Button>
           </div>
-          <p className="text-[10px] text-muted-foreground">সেভ করার পর সম্পূর্ণ সাইটের থিম রিয়েল-টাইম আপডেট হবে।</p>
+        </CardContent>
+      </Card>
+
+      {/* Ad slots */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Megaphone className="w-4 h-4" /> বিজ্ঞাপন স্লট</CardTitle>
+          <p className="text-[11px] text-muted-foreground">Google AdSense, banner image, বা যেকোনো HTML snippet বসান। বন্ধ থাকলে দেখা যাবে না।</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {renderAdSlot("ad_top", "টপ ব্যানার (হেডারের নিচে)", "প্রতি পেজে হেডারের ঠিক নিচে দেখাবে")}
+          {renderAdSlot("ad_mid", "মিড ব্যানার (ফিচার্ডের পরে)", "ফিচার্ড সেকশনের পরে এবং মূল গ্রিডের আগে")}
+          {renderAdSlot("ad_bottom", "বটম ব্যানার (ফুটারের আগে)", "পেজের নিচে ফুটারের ঠিক আগে")}
         </CardContent>
       </Card>
 

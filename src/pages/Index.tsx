@@ -3,12 +3,15 @@ import { motion } from "framer-motion";
 import NewsTicker from "@/components/NewsTicker";
 import SutraHeader from "@/components/SutraHeader";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useApplyFonts } from "@/hooks/useGoogleFonts";
 import CountryDropdownNav from "@/components/CountryDropdownNav";
 import CountrySection from "@/components/CountrySection";
 import HomeHero from "@/components/HomeHero";
 import LinkCard from "@/components/LinkCard";
 import AllCategoriesGrid from "@/components/AllCategoriesGrid";
 import CategoryNavMenu from "@/components/CategoryNavMenu";
+import AdSlotView from "@/components/AdSlotView";
+import HomeHighlights from "@/components/HomeHighlights";
 import { useCategories, useLinks } from "@/hooks/useLinks";
 import { useCountries, useSubCategories, CONTINENT_LABELS, CONTINENT_ORDER } from "@/hooks/useCountries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +31,17 @@ const Index = () => {
   const { data: countries = [], isLoading: countriesLoading } = useCountries();
   const { data: subCategories = [] } = useSubCategories();
   const { data: settings } = useSiteSettings();
+  useApplyFonts(settings?.font_heading, settings?.font_body);
+
+  // Trending = highest visits, Recent = newest by created_at
+  const trendingLinks = useMemo(
+    () => [...links].sort((a, b) => b.visits - a.visits).slice(0, 8),
+    [links]
+  );
+  const recentLinks = useMemo(
+    () => [...links].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8),
+    [links]
+  );
 
   const linkCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -95,6 +109,9 @@ const Index = () => {
         totalLinks={links.length}
       />
 
+      {/* Top ad slot — admin controlled */}
+      <AdSlotView slot="ad_top" />
+
       {showCountryView && (
         <HomeHero
           totalLinks={links.length}
@@ -114,6 +131,9 @@ const Index = () => {
           return <FeaturedCarousel />;
         })()}
       </Suspense>
+
+      {/* Mid ad slot — between featured and main grid */}
+      <AdSlotView slot="ad_mid" />
 
       {!isLoading && (
         <>
@@ -175,6 +195,14 @@ const Index = () => {
               linkCounts={linkCounts}
               onSelect={(id) => { setActiveCategory(id); setActiveCountry("all"); }}
             />
+
+            {/* Trending + Recently added highlight strips */}
+            {trendingLinks.length > 0 && (
+              <HomeHighlights title="জনপ্রিয় সাইট" variant="trending" links={trendingLinks} />
+            )}
+            {recentLinks.length > 0 && (
+              <HomeHighlights title="নতুন সংযোজন" variant="recent" links={recentLinks} />
+            )}
 
             {/* Other countries grouped by continent (BD excluded) */}
             {CONTINENT_ORDER.filter(cont => countriesByContinent[cont]?.length > 0).map((cont) => {
@@ -240,6 +268,9 @@ const Index = () => {
           </>
         )}
       </main>
+
+      {/* Bottom ad slot — admin controlled */}
+      <AdSlotView slot="ad_bottom" />
 
       <footer className="border-t border-border py-6 mt-4 bg-gradient-to-b from-transparent to-card/40">
         <div className="container space-y-3 text-center">

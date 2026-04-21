@@ -80,6 +80,11 @@
   }
 }
 
+:root {
+  --font-heading: 'Hind Siliguri', system-ui, sans-serif;
+  --font-body: 'Noto Sans Bengali', 'Hind Siliguri', system-ui, sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -87,22 +92,22 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Noto Sans Bengali', 'Hind Siliguri', system-ui, sans-serif;
+    font-family: var(--font-body);
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Hind Siliguri', system-ui, sans-serif;
+    font-family: var(--font-heading);
     @apply tracking-tight font-bold;
   }
 
   .font-body {
-    font-family: 'Noto Sans Bengali', 'Hind Siliguri', system-ui, sans-serif;
+    font-family: var(--font-body);
   }
 
   .font-meta {
-    font-family: 'Noto Sans Bengali', system-ui, sans-serif;
+    font-family: var(--font-body);
     @apply text-[11px] tracking-wide;
   }
 
