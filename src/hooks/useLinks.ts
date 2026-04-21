@@ -100,11 +100,12 @@ export function useAllLinks() {
 export function useSubmitLink() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (link: { title: string; url: string; category_id: string }) => {
+    mutationFn: async (link: { title: string; url: string; category_id: string; favicon?: string | null }) => {
       const { error } = await supabase.from("links").insert({
         title: link.title,
         url: link.url,
         category_id: link.category_id,
+        favicon: link.favicon ?? null,
         status: "pending",
       });
       if (error) throw error;
