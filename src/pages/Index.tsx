@@ -106,6 +106,7 @@ const Index = () => {
         categories={categories}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        totalLinks={links.length}
       />
 
       {/* Top ad slot — admin controlled */}
