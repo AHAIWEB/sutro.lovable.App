@@ -444,4 +444,102 @@ function CategoryManageCard({ category, onUpdate, onDelete }: any) {
   );
 }
 
+/* ─── Dynamic Dashboard ───────────────────────────────────── */
+function DynamicDashboard({ links, categories, pendingCount, approvedCount }: any) {
+  const totalVisits = links.reduce((sum: number, l: any) => sum + (l.visits || 0), 0);
+  const last7d = links.filter((l: any) => {
+    const d = new Date(l.created_at).getTime();
+    return d > Date.now() - 7 * 24 * 3600 * 1000;
+  }).length;
+  const topLink = [...links].sort((a: any, b: any) => (b.visits || 0) - (a.visits || 0))[0];
+  const recentPending = links.filter((l: any) => l.status === "pending").slice(0, 3);
+
+  const catDist: Record<string, number> = {};
+  links.forEach((l: any) => { catDist[l.category_id] = (catDist[l.category_id] || 0) + 1; });
+  const topCats = Object.entries(catDist)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, count]) => ({
+      id,
+      count,
+      name: categories.find((c: any) => c.id === id)?.name || id,
+      icon: categories.find((c: any) => c.id === id)?.icon || "📋",
+    }));
+  const maxCount = Math.max(...topCats.map((c) => c.count), 1);
+
+  const statCards = [
+    { label: "পেন্ডিং", value: pendingCount, Icon: Activity, accent: "text-amber-500", bg: "bg-amber-500/10", urgent: pendingCount > 0 },
+    { label: "অ্যাপ্রুভড", value: approvedCount, Icon: Check, accent: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "মোট ভিজিট", value: totalVisits, Icon: Eye, accent: "text-primary", bg: "bg-primary/10" },
+    { label: "৭ দিনে নতুন", value: last7d, Icon: Sparkles, accent: "text-accent", bg: "bg-accent/10" },
+    { label: "মোট লিংক", value: links.length, Icon: Link2, accent: "text-foreground", bg: "bg-muted" },
+    { label: "ক্যাটাগরি", value: categories.length, Icon: FolderOpen, accent: "text-foreground", bg: "bg-muted" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        {statCards.map(({ label, value, Icon, accent, bg, urgent }) => (
+          <Card key={label} className={`relative overflow-hidden ${urgent ? "ring-2 ring-amber-500/50" : ""}`}>
+            <CardContent className="p-3">
+              <div className={`w-7 h-7 rounded-md ${bg} flex items-center justify-center mb-2`}>
+                <Icon className={`w-3.5 h-3.5 ${accent}`} />
+              </div>
+              <p className={`text-xl font-bold leading-tight ${accent}`}>{value.toLocaleString("bn-BD")}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-primary" /> সর্বাধিক জনপ্রিয়</CardTitle></CardHeader>
+          <CardContent className="pt-0">
+            {topLink ? (
+              <a href={topLink.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-muted transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg flex-shrink-0">🏆</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{topLink.title}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{topLink.url}</p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">{(topLink.visits || 0).toLocaleString("bn-BD")} ভিজিট</Badge>
+              </a>
+            ) : (
+              <p className="text-xs text-muted-foreground py-3 text-center">কোনো লিংক নেই</p>
+            )}
+            {recentPending.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                <p className="text-[11px] font-medium text-amber-600">⚠️ পেন্ডিং অপেক্ষমাণ ({recentPending.length.toLocaleString("bn-BD")})</p>
+                {recentPending.map((l: any) => (
+                  <div key={l.id} className="text-[11px] truncate text-muted-foreground">• {l.title}</div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-1.5"><FolderOpen className="w-4 h-4 text-accent" /> শীর্ষ ক্যাটাগরি</CardTitle></CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            {topCats.map((c) => (
+              <div key={c.id} className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="flex items-center gap-1.5 truncate"><span>{c.icon}</span><span className="truncate">{c.name}</span></span>
+                  <span className="font-medium text-muted-foreground tabular-nums">{c.count.toLocaleString("bn-BD")}</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all" style={{ width: `${(c.count / maxCount) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+            {topCats.length === 0 && <p className="text-xs text-muted-foreground py-3 text-center">কোনো ডেটা নেই</p>}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default Admin;
+
