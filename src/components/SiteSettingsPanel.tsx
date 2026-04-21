@@ -114,6 +114,40 @@ const SiteSettingsPanel = () => {
     </div>
   );
 
+  const handleAdImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    key: "ad_top" | "ad_mid" | "ad_bottom",
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/^image\/(png|jpe?g|gif|webp|svg\+xml)$/.test(file.type)) {
+      toast({ title: "শুধু PNG/JPG/GIF/WEBP/SVG সাপোর্টেড", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "ফাইল ২MB এর কম হতে হবে", variant: "destructive" });
+      return;
+    }
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `ad-${key}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("site-assets").getPublicUrl(path);
+      const next = { ...draft[key], image_url: pub.publicUrl };
+      set(key, next);
+      await update.mutateAsync({ key, value: next });
+      toast({ title: "বিজ্ঞাপন ছবি আপলোড হয়েছে ✅" });
+    } catch (err: any) {
+      toast({ title: "আপলোড ব্যর্থ", description: err.message, variant: "destructive" });
+    } finally {
+      e.target.value = "";
+    }
+  };
+
   const renderAdSlot = (key: "ad_top" | "ad_mid" | "ad_bottom", label: string, hint: string) => {
     const slot = draft[key];
     return (
@@ -131,15 +165,75 @@ const SiteSettingsPanel = () => {
             }}
           />
         </div>
-        <Textarea
-          value={slot.html}
-          onChange={(e) => set(key, { ...slot, html: e.target.value })}
-          rows={3}
-          placeholder='<a href="..."><img src="..." alt="ad" /></a>  বা AdSense snippet'
-          className="font-mono text-[11px]"
-        />
+
+        <Tabs defaultValue={slot.image_url ? "image" : "html"}>
+          <TabsList className="h-7">
+            <TabsTrigger value="image" className="text-[11px] h-5">
+              <ImageIcon className="w-3 h-3 mr-1" /> ছবি আপলোড
+            </TabsTrigger>
+            <TabsTrigger value="html" className="text-[11px] h-5">HTML / AdSense</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="image" className="mt-2 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {slot.image_url && (
+                <img
+                  src={slot.image_url}
+                  alt="ad preview"
+                  className="h-12 w-auto max-w-[160px] object-contain rounded ring-1 ring-border bg-muted"
+                />
+              )}
+              <label className="inline-flex items-center gap-1 px-2 py-1.5 text-xs rounded-md border border-border cursor-pointer hover:border-primary/40">
+                <Upload className="w-3 h-3" /> {slot.image_url ? "পরিবর্তন" : "PNG/JPG বাছাই"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={(e) => handleAdImageUpload(e, key)}
+                />
+              </label>
+              {slot.image_url && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={async () => {
+                    const next = { ...slot, image_url: "" };
+                    set(key, next);
+                    await update.mutateAsync({ key, value: next });
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 text-destructive" />
+                </Button>
+              )}
+            </div>
+            <Input
+              value={slot.link_url || ""}
+              onChange={(e) => set(key, { ...slot, link_url: e.target.value })}
+              placeholder="ক্লিক URL (https://... ঐচ্ছিক)"
+              className="h-7 text-[11px]"
+            />
+            <Input
+              value={slot.alt || ""}
+              onChange={(e) => set(key, { ...slot, alt: e.target.value })}
+              placeholder="Alt টেক্সট (ঐচ্ছিক)"
+              className="h-7 text-[11px]"
+            />
+          </TabsContent>
+
+          <TabsContent value="html" className="mt-2">
+            <Textarea
+              value={slot.html}
+              onChange={(e) => set(key, { ...slot, html: e.target.value })}
+              rows={3}
+              placeholder='<a href="..."><img src="..." alt="ad" /></a>  বা AdSense snippet'
+              className="font-mono text-[11px]"
+            />
+          </TabsContent>
+        </Tabs>
+
         <div className="flex items-center justify-between">
-          <p className="text-[10px] text-muted-foreground">{hint}</p>
+          <p className="text-[10px] text-muted-foreground">{hint} • ছবি থাকলে ছবি অগ্রাধিকার পাবে</p>
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => saveOne(key)}>সেভ</Button>
         </div>
       </div>

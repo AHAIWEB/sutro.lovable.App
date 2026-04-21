@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 export interface AdSlot {
   enabled: boolean;
   html: string; // raw HTML / AdSense snippet / image+link markup
+  image_url?: string; // uploaded image URL (PNG/JPG)
+  link_url?: string;  // optional click-through URL for the image
+  alt?: string;       // optional alt text for the image
 }
 
 export interface SiteSettingsMap {
