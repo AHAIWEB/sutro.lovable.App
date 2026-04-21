@@ -36,18 +36,25 @@ const SutraHeader = ({ categories, searchQuery, onSearchChange, totalLinks }: Su
   const siteName = settings?.site_name || "সূত্র";
   const tagline = settings?.site_tagline;
   const logoUrl = settings?.logo_url;
+  const logoUrlDark = settings?.logo_url_dark;
   const logoEmoji = settings?.logo_emoji;
+  const logoSize = settings?.logo_size || "medium";
   const headerMenu = settings?.header_menu || [];
+
+  const activeLogoUrl = isDark && logoUrlDark ? logoUrlDark : logoUrl;
+  const sizeClass =
+    logoSize === "small" ? "h-8 sm:h-9 max-w-[140px] sm:max-w-[170px]" :
+    logoSize === "large" ? "h-12 sm:h-14 max-w-[220px] sm:max-w-[280px]" :
+    "h-10 sm:h-11 max-w-[180px] sm:max-w-[220px]";
 
   return (
     <header className="border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-30">
       <div className="container flex items-center justify-between py-3 gap-4">
         <div className="flex items-center gap-3 flex-shrink-0">
-          {logoUrl ? (
-            // Landscape logo — wide brand bar, no cropping
-            <a href="/" className="flex items-center h-10 sm:h-11 max-w-[180px] sm:max-w-[220px] overflow-hidden">
+          {activeLogoUrl ? (
+            <a href="/" className={`flex items-center overflow-hidden ${sizeClass}`}>
               <img
-                src={logoUrl}
+                src={activeLogoUrl}
                 alt={siteName}
                 className="h-full w-auto object-contain"
               />
